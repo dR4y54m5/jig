@@ -3,7 +3,7 @@ id: JIG-ADR-007
 title: Keep agent instructions in the vault and install them untracked
 kind: adr
 revision: A
-status: draft
+status: released
 date: 2026-10-01
 author: dR4y54m5
 gate: TRR
@@ -44,3 +44,4 @@ Chosen option: 3. The vault is private and versioned, reaches a new machine firs
 
 | Rev | Date | Description | Author |
 |---|---|---|---|
+| A | 2026-10-01 | Initial baseline | dR4y54m5 |

@@ -3,7 +3,7 @@ id: JIG-SPC-001
 title: Engineering process
 kind: spc
 revision: E
-status: draft
+status: released
 date: 2026-10-01
 author: dR4y54m5
 gate: TRR
@@ -384,3 +384,4 @@ The references in section 2 describe more than one engineer needs. The process l
 | B | 2026-09-30 | Requirement headings may sit one level deeper inside a subsection | dR4y54m5 |
 | C | 2026-09-30 | Gate packages include test and findings reports that exist | dR4y54m5 |
 | D | 2026-09-30 | Section 4.3 agent context; bench and archive in the vault layout | dR4y54m5 |
+| E | 2026-10-01 | References claim no conformance; agent files stay untracked; criteria come from the profile; basis stamps; phases without gates; private references checked in every text file | dR4y54m5 |

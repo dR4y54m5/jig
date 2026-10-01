@@ -3,7 +3,7 @@ id: JIG-ADR-006
 title: Plan every change before applying it
 kind: adr
 revision: B
-status: draft
+status: released
 date: 2026-10-01
 author: dR4y54m5
 gate: TRR
@@ -39,3 +39,4 @@ Chosen option: 2, because one code path produces the plan, so the dry run cannot
 | Rev | Date | Description | Author |
 |---|---|---|---|
 | A | 2026-09-30 | Initial baseline | dR4y54m5 |
+| B | 2026-10-01 | Name jig setup and every file a plan may overwrite; a dry run marks each step that changes nothing | dR4y54m5 |

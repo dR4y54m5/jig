@@ -3,7 +3,7 @@ id: JIG-ADR-002
 title: Render PDFs with Pandoc and Typst
 kind: adr
 revision: B
-status: draft
+status: released
 date: 2026-10-01
 author: dR4y54m5
 gate: TRR
@@ -60,3 +60,4 @@ Chosen option: 4, because Pandoc reads GitHub-flavored Markdown accurately, tabl
 | Rev | Date | Description | Author |
 |---|---|---|---|
 | A | 2026-09-30 | Initial baseline | dR4y54m5 |
+| B | 2026-10-01 | Reword the reason for choosing Pandoc: it reads GitHub-flavored Markdown accurately | dR4y54m5 |

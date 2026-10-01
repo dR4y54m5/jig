@@ -3,7 +3,7 @@ id: JIG-ADR-008
 title: Stamp each test result with what it verified
 kind: adr
 revision: A
-status: draft
+status: released
 date: 2026-10-01
 author: dR4y54m5
 gate: TRR
@@ -43,3 +43,4 @@ Chosen option: 3. `jig doc new tr` writes a Basis stamp for every test case: a 4
 
 | Rev | Date | Description | Author |
 |---|---|---|---|
+| A | 2026-10-01 | Initial baseline | dR4y54m5 |

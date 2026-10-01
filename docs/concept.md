@@ -3,7 +3,7 @@ id: JIG-CON
 title: Concept brief
 kind: con
 revision: B
-status: draft
+status: released
 date: 2026-10-01
 author: dR4y54m5
 gate: CR
@@ -83,3 +83,4 @@ flowchart LR
 | Rev | Date | Description | Author |
 |---|---|---|---|
 | A | 2026-09-30 | Initial baseline | dR4y54m5 |
+| B | 2026-10-01 | Add N-08: agent instructions and settings stay out of every project repository | dR4y54m5 |

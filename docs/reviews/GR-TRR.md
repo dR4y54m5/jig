@@ -35,7 +35,7 @@ Decision requested: once the repository is published and continuous integration 
 <!-- jig:begin checks -->
 | Check | Result | Detail |
 |---|---|---|
-| verification and validation plan released | Fail | JIG-VVP Rev D draft |
+| verification and validation plan released | Pass | JIG-VVP Rev D released |
 | requirements are well formed | Pass | 50 requirements, 0 errors, 0 warnings |
 | every requirement has a test case | Pass | 50 of 50 covered |
 | `jig check` reports no errors | Pass | 0 errors |
@@ -46,26 +46,26 @@ Decision requested: once the repository is published and continuous integration 
 <!-- jig:begin evidence -->
 | Document | Title | Revision | Status |
 |---|---|---|---|
-| JIG-PLN | Project plan | B | draft |
-| JIG-CON | Concept brief | B | draft |
-| JIG-RSK | Risk register | B | draft |
-| JIG-SRS | System requirements specification | C | draft |
-| JIG-ARC | Architecture description | C | draft |
-| JIG-SPC-001 | Engineering process | E | draft |
-| JIG-VVP | Verification and validation plan | D | draft |
+| JIG-PLN | Project plan | B | released |
+| JIG-CON | Concept brief | B | released |
+| JIG-RSK | Risk register | B | released |
+| JIG-SRS | System requirements specification | C | released |
+| JIG-ARC | Architecture description | C | released |
+| JIG-SPC-001 | Engineering process | E | released |
+| JIG-VVP | Verification and validation plan | D | released |
 | JIG-TR-001 | Verification of jig 0.1.0 | A | released |
 | JIG-TR-002 | Verification of agent context changes | A | released |
-| JIG-TR-003 | Verification of the review fixes | A | draft |
+| JIG-TR-003 | Verification of the review fixes | A | released |
 | JIG-SPK-001 | PDF pipeline | A | released |
 | JIG-ADR-001 | Encode the process as data embedded in the binary | A | released |
-| JIG-ADR-002 | Render PDFs with Pandoc and Typst | B | draft |
+| JIG-ADR-002 | Render PDFs with Pandoc and Typst | B | released |
 | JIG-ADR-003 | Render diagrams in process with Rust renderers | A | released |
 | JIG-ADR-004 | Parse a strict front-matter subset | A | released |
 | JIG-ADR-005 | Keep private terms in the vault | A | released |
-| JIG-ADR-006 | Plan every change before applying it | B | draft |
-| JIG-ADR-007 | Keep agent instructions in the vault and install them untracked | A | draft |
-| JIG-ADR-008 | Stamp each test result with what it verified | A | draft |
-| JIG-ADR-009 | Check the files git would commit | A | draft |
+| JIG-ADR-006 | Plan every change before applying it | B | released |
+| JIG-ADR-007 | Keep agent instructions in the vault and install them untracked | A | released |
+| JIG-ADR-008 | Stamp each test result with what it verified | A | released |
+| JIG-ADR-009 | Check the files git would commit | A | released |
 <!-- jig:end evidence -->
 
 ## 6. Open actions

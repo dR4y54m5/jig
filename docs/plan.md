@@ -3,7 +3,7 @@ id: JIG-PLN
 title: Project plan
 kind: pln
 revision: B
-status: draft
+status: released
 date: 2026-10-01
 author: dR4y54m5
 gate: CR
@@ -65,3 +65,4 @@ Documents, source code and design files are version-controlled in this repositor
 | Rev | Date | Description | Author |
 |---|---|---|---|
 | A | 2026-09-30 | Initial baseline | dR4y54m5 |
+| B | 2026-10-01 | Test procedures: each test case is a cargo test command or an inspection or demonstration stated in the test case | dR4y54m5 |

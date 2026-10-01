@@ -3,7 +3,7 @@ id: JIG-ADR-009
 title: Check the files git would commit
 kind: adr
 revision: A
-status: draft
+status: released
 date: 2026-10-01
 author: dR4y54m5
 gate: TRR
@@ -42,3 +42,4 @@ Chosen option: 3. Git already knows which files a commit can contain: `git ls-fi
 
 | Rev | Date | Description | Author |
 |---|---|---|---|
+| A | 2026-10-01 | Initial baseline | dR4y54m5 |

@@ -3,7 +3,7 @@ id: JIG-TR-003
 title: Verification of the review fixes
 kind: tr
 revision: A
-status: draft
+status: released
 date: 2026-10-01
 author: dR4y54m5
 gate: RRR
@@ -233,3 +233,4 @@ All 31 test cases pass, and every requirement in JIG-SRS Rev C is verified by it
 
 | Rev | Date | Description | Author |
 |---|---|---|---|
+| A | 2026-10-01 | Full run of all 31 test cases after the review fixes | dR4y54m5 |

@@ -3,7 +3,7 @@ id: JIG-RSK
 title: Risk register
 kind: rsk
 revision: B
-status: draft
+status: released
 date: 2026-10-01
 author: dR4y54m5
 gate: TRR
@@ -35,3 +35,4 @@ Likelihood (L) and impact (I) are rated from 1 to 5, and the score is L × I. A 
 | Rev | Date | Description | Author |
 |---|---|---|---|
 | A | 2026-09-30 | Initial baseline | dR4y54m5 |
+| B | 2026-10-01 | Update RISK-001 and RISK-003 with the findings of the 2026-10-01 review; add RISK-006 | dR4y54m5 |
