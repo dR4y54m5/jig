@@ -6,7 +6,7 @@ A command-line tool that scaffolds, checks and renders engineering projects run 
 
 - **Scaffolds** a project for its kind (hardware product, software, reverse engineering or exercise) and tier, drafting the documents its phases require.
 - **Checks** document control, requirement quality (one `shall` per statement, a verification method, no vague terms), traceability references, diagrams, and the separation between a project's engineering record and private material, in every text file git would commit.
-- **Runs gate reviews**: readiness against the lifecycle profile, a review record with entry criteria and evidence, and the decision that moves the project to its next phase.
+- **Runs gate reviews**: readiness against the lifecycle profile, a review record with entry criteria and evidence, and the decision that moves the project to its next phase. Gates are cumulative: each requires the documents and checks of every phase up to it.
 - **Renders** documents and gate review packages to PDF, with a title block, document-control header, page numbering, draft watermarks and a generated requirements traceability matrix.
 
 ## The process

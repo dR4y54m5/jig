@@ -2,8 +2,8 @@
 id: JIG-VVP
 title: Verification and validation plan
 kind: vvp
-revision: E
-status: released
+revision: F
+status: draft
 date: 2026-10-01
 author: dR4y54m5
 gate: TRR
@@ -279,7 +279,7 @@ Continuous integration runs `cargo test` and `jig check` on every push to `main`
 - **Method:** Test
 - **Level:** System
 - **Procedure:** `cargo test --test cli explain_prints_the_rules_the_other_commands_enforce`
-- **Pass criteria:** The test passes: the kinds, the requirement rules and a gate's criteria are printed; a product lifecycle asked for without a tier lists every phase and document and marks what a tier adds, and with a tier lists only what applies; with `--json`, a topic returns that topic's text.
+- **Pass criteria:** The test passes: the kinds, the requirement rules and a gate's criteria are printed; a gate lists the documents and checks of the phases before it with its own, and names the phase that first requires each document; a product lifecycle asked for without a tier lists every phase and document and marks what a tier adds, and with a tier lists only what applies; with `--json`, a topic returns that topic's text.
 
 ### TC-031 Templates hold guidance and no content
 
@@ -296,6 +296,14 @@ Continuous integration runs `cargo test` and `jig check` on every push to `main`
 - **Level:** System
 - **Procedure:** Push a commit to `main`, then read the run that the push started with `gh run list --branch main --limit 1` and `gh run view <run> --log`.
 - **Pass criteria:** The run starts from the push without a manual step, names the pushed commit and concludes with success. Its log shows Pandoc and Typst installed, so that no test is skipped, `cargo test` reporting no failed test, and `jig check` reporting 0 errors.
+
+### TC-033 A gate requires the documents and checks of earlier phases
+
+- **Verifies:** REQ-052, REQ-053
+- **Method:** Test
+- **Level:** System
+- **Procedure:** `cargo test --bin jig process::` and `cargo test --test cli a_gate_requires_the_documents_and_checks_of_earlier_phases`
+- **Pass criteria:** The tests pass: a software project started at Build lists at its TRR the documents and checks of Concept, Definition and Design with those of Build, each document once and in the strongest state any of those phases requires; a go is refused while only the document of the gate's own phase is released, and is recorded once the earlier documents are released; in every profile no gate drops or weakens what the gate before it requires; a tier leaves out what applies only above it.
 
 ## 5. Validation
 

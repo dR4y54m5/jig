@@ -162,7 +162,9 @@ pub fn readiness(
     let gate = phase.gate.clone().unwrap_or_default();
     let mut checks = Vec::new();
 
-    for req in profile.requirements(phase, tier) {
+    // Gates are cumulative: the documents and checks of every phase up to
+    // this one are required, not only those of the phase the gate closes.
+    for req in profile.gate_requirements(phase, tier) {
         let Some(kind) = Process::get().kind(&req.kind) else {
             continue;
         };
@@ -205,8 +207,8 @@ pub fn readiness(
     }
 
     let matrix = Matrix::build(docs);
-    for check in &phase.checks {
-        let item = match check.as_str() {
+    for check in profile.gate_checks(phase, tier) {
+        let item = match check {
             "requirements-well-formed" => {
                 let count = |severity: Severity| {
                     findings

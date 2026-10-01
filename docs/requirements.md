@@ -2,8 +2,8 @@
 id: JIG-SRS
 title: System requirements specification
 kind: srs
-revision: D
-status: released
+revision: E
+status: draft
 date: 2026-10-01
 author: dR4y54m5
 gate: SRR
@@ -462,6 +462,24 @@ When a commit is pushed to the `main` branch of the jig repository, continuous i
 - **Priority:** Must
 - **Rationale:** A new machine builds jig from its repository. A run on a machine that holds only the repository and its tools shows, for every change, that the build and the tests depend on nothing else.
 - **Source:** N-07
+
+### REQ-052 Cumulative documents
+
+jig shall require at a gate each document that the gate's phase or an earlier phase of the lifecycle requires, as released where any of those phases requires it released.
+
+- **Verification:** Test
+- **Priority:** Must
+- **Rationale:** A project adopted at a late phase could otherwise pass its gate with every earlier document unwritten, and a baseline document revised after its gate would go unseen at the next one.
+- **Source:** N-02
+
+### REQ-053 Cumulative checks
+
+jig shall run at a gate each automated check that the gate's phase or an earlier phase of the lifecycle lists.
+
+- **Verification:** Test
+- **Priority:** Must
+- **Rationale:** What an earlier gate checked, such as well-formed requirements, still has to hold at a later gate.
+- **Source:** N-02
 
 ## 4. Performance requirements
 

@@ -261,17 +261,11 @@ const PACK_ORDER: [&str; 20] = [
 /// plus decision records, spike, test and findings reports, specifications,
 /// errata and change orders, which are evidence at any gate once they exist.
 pub fn pack_kinds(project: &Project, phase: &Phase) -> BTreeSet<String> {
-    let profile = project.profile();
-    let tier = project.tier();
-    let phases = profile.phases_for(tier);
-    let upto = phases
-        .iter()
-        .position(|p| p.id == phase.id)
-        .unwrap_or(phases.len().saturating_sub(1));
-    let mut kinds: BTreeSet<String> = phases[..=upto]
-        .iter()
-        .flat_map(|p| profile.requirements(p, tier))
-        .map(|r| r.kind.clone())
+    let mut kinds: BTreeSet<String> = project
+        .profile()
+        .gate_requirements(phase, project.tier())
+        .into_iter()
+        .map(|r| r.kind)
         .collect();
     kinds.extend(["adr", "spk", "spc", "tr", "fnd", "err", "eco"].map(String::from));
     kinds

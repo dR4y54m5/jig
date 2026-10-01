@@ -2,8 +2,8 @@
 id: JIG-SPC-001
 title: Engineering process
 kind: spc
-revision: E
-status: released
+revision: F
+status: draft
 date: 2026-10-01
 author: dR4y54m5
 gate: TRR
@@ -211,7 +211,9 @@ Every defining document is closed by evidence later in the lifecycle.
 5. `jig gate close <GATE> --outcome <OUTCOME>` records the decision, releases the review record and, on a go, moves the project to its next phase and drafts that phase's documents.
 6. The baseline is committed and tagged `gate/<gate>`.
 
-The entry criteria come from the profile. A criterion that is missing from the record counts as unconfirmed, so a checklist cannot be shortened to pass a gate. A line added to the checklist is a criterion too.
+Gates are cumulative. A gate requires the documents and the automated checks of its own phase and of every phase before it, each document once and in the strongest state any of those phases asks for: released where one of them asks for a release, existing otherwise. A baseline document that is revised after its gate therefore has to be released again before the next gate can record a go, and a project adopted at a late phase has to write and release the documents of the earlier phases before its first gate ([JIG-ADR-010](../decisions/ADR-010-make-gates-cumulative.md)).
+
+The entry criteria come from the profile, and are those of the gate's own phase. A criterion that is missing from the record counts as unconfirmed, so a checklist cannot be shortened to pass a gate. A line added to the checklist is a criterion too. An earlier gate that was never held is not held later: it is recorded in the project plan (section 15.1).
 
 A go is refused while any automated check fails or any criterion is unconfirmed, unless `--force` records it anyway; the record then states that the go was forced and what it overrode. No decision is recorded while the record contains template guidance, or once the record is released. A refused decision changes neither the record nor the project.
 
@@ -226,7 +228,7 @@ A go is refused while any automated check fails or any criterion is unconfirmed,
 
 ### 8.3 Required documents, hardware product
 
-R means released, E means the document exists in any status.
+R means released, E means the document exists in any status. Each row lists what the profile names for that phase. A gate requires its own row and every row above it (section 8.1): the CDR of a desk product requires PLN R, CON R, RSK E, SRS R, ARC R, VVP R and TP E, and runs both checks of its row.
 
 | Gate | Required documents | Automated checks |
 |---|---|---|
@@ -239,7 +241,7 @@ R means released, E means the document exists in any status.
 | PRR | MFG R, USR R, REL R; retail: CMP R | None |
 | CLOSE | None | None |
 
-Every gate also requires `jig check` to report no errors. `jig explain <GATE> --kind <KIND>` lists the documents and criteria for any profile; without `--tier` it lists those of every tier and marks what a tier adds.
+Every gate also requires `jig check` to report no errors. `jig explain <GATE> --kind <KIND>` lists the documents, checks and criteria of a gate for any profile, those of the earlier phases included, with the phase that first requires each document in that state; without `--tier` it lists those of every tier and marks what a tier adds.
 
 ## 9. Document set
 
@@ -361,7 +363,7 @@ Every page shows the document ID and revision in its header, and the project and
 
 ### 15.1 Per project
 
-Each project records its tailoring in section 4 of its project plan, such as documents merged at its tier or gates not held when a project is adopted mid-life, as NASA practice requires for significant tailoring.
+Each project records its tailoring in section 4 of its project plan, such as documents merged at its tier or gates not held when a project is adopted mid-life, as NASA practice requires for significant tailoring. Recording a gate as not held does not waive its documents: the project's next gate still requires them (section 8.1).
 
 ### 15.2 Practices left out
 

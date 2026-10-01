@@ -24,7 +24,7 @@ jig implements a staged engineering process: phases closed by gate reviews, cont
 4. Record what the user wants to learn from the project in the vault roadmap, not in the project repository.
 5. Run `jig check` and `jig status`, and tell the user what the Concept Review needs next. Mention the workspace file (`jig vault path` shows the vault; workspaces are in its `workspaces/` folder).
 
-To bring an existing repository under the process, use `jig adopt <path>` with `--phase` set to where the project really is. The dry run and the adoption end with what `jig check` finds in the existing files: show it, and either fix each error or, for third-party paths, adopt with `--exclude <path>`. Earlier phases' documents are drafted so they can be written retroactively; record the gates not held in the plan's tailoring table.
+To bring an existing repository under the process, use `jig adopt <path>` with `--phase` set to where the project really is. The dry run and the adoption end with what `jig check` finds in the existing files: show it, and either fix each error or, for third-party paths, adopt with `--exclude <path>`. Earlier phases' documents are drafted so they can be written retroactively; record the gates not held in the plan's tailoring table. Gates are cumulative, so the project's first gate requires those earlier documents written and released: tell the user how many that is before adopting at a late phase.
 
 ## Writing documents
 
@@ -38,7 +38,7 @@ To bring an existing repository under the process, use `jig adopt <path>` with `
 
 ## Gate reviews
 
-1. `jig gate check` and summarize what stands between the project and its gate.
+1. `jig gate check` and summarize what stands between the project and its gate. A gate requires the documents and checks of its own phase and of every phase before it (`jig explain <GATE>`), so a baseline document revised since its gate has to be released again.
 2. Close the gaps the user wants closed: write documents, then release them.
 3. `jig gate open`, then write the record's summary and open actions. No decision can be recorded while the record still holds template guidance.
 4. Ask the user to confirm each entry criterion (multi-select question). Tick only what the user confirms.

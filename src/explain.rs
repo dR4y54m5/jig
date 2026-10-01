@@ -78,7 +78,7 @@ fn kind_detail(kind: &crate::process::Kind) -> String {
     if kind.end_user() {
         out.push_str("Style:   written for end users, who may be addressed as \"you\".\n");
     }
-    out.push_str("\nRequired by:\n");
+    out.push_str("\nRequired by (and by every later gate of the same lifecycle):\n");
     let mut any = false;
     for profile in &Process::get().profiles {
         for phase in &profile.phases {
@@ -156,6 +156,10 @@ fn phases(profile: &Profile, tier: Option<&str>) -> String {
     }
     if profile.phases.iter().all(|phase| phase.gate.is_none()) {
         out.push_str("\nNo phase has a gate; `jig phase next` moves the project on.\n");
+    } else {
+        out.push_str(
+            "\nGates are cumulative: a gate requires the documents and automated checks of\nits own phase and of every phase before it. `jig explain <GATE>` lists them.\n",
+        );
     }
     out
 }
@@ -163,7 +167,7 @@ fn phases(profile: &Profile, tier: Option<&str>) -> String {
 fn gate_detail(profile: &Profile, phase: &Phase, tier: Option<&str>) -> String {
     let scope = tier.map(|t| format!(", {t} tier")).unwrap_or_default();
     let mut out = format!(
-        "{}: {} ({}{scope})\nCloses phase {}{}.\nQuestion:   {}\nEquivalent: {}\n\nRequired documents:\n",
+        "{}: {} ({}{scope})\nCloses phase {}{}.\nQuestion:   {}\nEquivalent: {}\n\nRequired documents, of this phase and of every phase before it:\n",
         phase.gate.as_deref().unwrap_or(""),
         phase.gate_title.as_deref().unwrap_or(""),
         profile.title,
@@ -173,11 +177,7 @@ fn gate_detail(profile: &Profile, phase: &Phase, tier: Option<&str>) -> String {
         phase.equivalent.as_deref().unwrap_or("")
     );
     let applies = |min_tier: Option<&str>| tier.is_none() || profile.applies(tier, min_tier);
-    for req in phase
-        .require
-        .iter()
-        .filter(|req| applies(req.min_tier.as_deref()))
-    {
+    for req in profile.gate_requirements(phase, tier) {
         let title = Process::get()
             .kind(&req.kind)
             .map(|k| k.title.clone())
@@ -188,17 +188,16 @@ fn gate_detail(profile: &Profile, phase: &Phase, tier: Option<&str>) -> String {
             "exists"
         };
         out.push_str(&format!(
-            "  {} ({}): {state}{}\n",
+            "  {} ({}): {state}{}, since {}\n",
             title,
             req.kind,
-            tier_note(tier, req.min_tier.as_deref())
+            tier_note(tier, req.min_tier.as_deref()),
+            req.phase
         ));
     }
-    if !phase.checks.is_empty() {
-        out.push_str(&format!(
-            "\nAutomated checks: {}\n",
-            phase.checks.join(", ")
-        ));
+    let checks = profile.gate_checks(phase, tier);
+    if !checks.is_empty() {
+        out.push_str(&format!("\nAutomated checks: {}\n", checks.join(", ")));
     }
     out.push_str("\nEntry criteria (confirmed in the gate review record):\n");
     for criterion in phase

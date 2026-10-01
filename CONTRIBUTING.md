@@ -7,7 +7,7 @@ How jig is organised, built and tested, and how it is changed without breaking t
 | Path | Contents |
 |---|---|
 | `src/main.rs` | Command-line interface and output (text or `--json`) |
-| `src/process.rs` | Loads and validates the embedded process data |
+| `src/process.rs` | Loads and validates the embedded process data; merges what a gate requires from the phases up to it ([JIG-ADR-010](docs/decisions/ADR-010-make-gates-cumulative.md)) |
 | `src/project.rs`, `src/bench.rs` | `project.toml`, the bench layout, the registry and the vault's `jig.toml` |
 | `src/frontmatter.rs` | The document-control subset of YAML ([JIG-ADR-004](docs/decisions/ADR-004-parse-a-strict-front-matter-subset.md)) |
 | `src/markdown.rs` | Fences, prose, headings and links, aware of code blocks, comments and code spans |
@@ -72,7 +72,7 @@ The unit tests reject a kind without a template, a template without guidance or 
 
 ### 4.2 A lifecycle
 
-Profiles live in `process/profiles/<kind>.toml` and are listed in `PROFILES` in `src/process.rs`. Phases carry their gate, question, industry equivalent, required documents (`require`), automated checks (`checks`) and entry criteria. A criterion never repeats an automated check, and a phase without a gate is left with `jig phase next`. `min_tier` limits a phase, requirement or criterion to a tier and above. Update JIG-SPC-001 sections 7 and 8.3.
+Profiles live in `process/profiles/<kind>.toml` and are listed in `PROFILES` in `src/process.rs`. Phases carry their gate, question, industry equivalent, required documents (`require`), automated checks (`checks`) and entry criteria. Gates are cumulative ([JIG-ADR-010](docs/decisions/ADR-010-make-gates-cumulative.md)): a gate requires the documents and checks of its phase and of every phase before it, so a phase lists an earlier document again only to raise its state from `exists` to `released`. A criterion never repeats an automated check, and a phase without a gate is left with `jig phase next`. `min_tier` limits a phase, requirement or criterion to a tier and above. Update JIG-SPC-001 sections 7 and 8.3.
 
 ### 4.3 A `jig check` rule
 

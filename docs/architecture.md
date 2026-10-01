@@ -2,8 +2,8 @@
 id: JIG-ARC
 title: Architecture description
 kind: arc
-revision: D
-status: released
+revision: E
+status: draft
 date: 2026-10-01
 author: dR4y54m5
 gate: DR
@@ -46,6 +46,7 @@ flowchart LR
 - **Agent context is installed, not remembered, and never committed.** A project's agent instructions live in its vault folder. `jig setup` installs a read-only copy and the local settings in the repository, and lists both in the repository's local exclude file; `jig init` installs the bench guide from the vault. The layers are defined in [JIG-SPC-001](specs/SPC-001-engineering-process.md) section 4.3.
 - **Git decides what is checked.** `jig check` covers the files git tracks or would add, so ignored files need no second ignore list, and `project.toml` can exclude tracked third-party paths.
 - **A refusal has no side effects.** A gate decision is validated in full before the first write, so a refused decision leaves the review record and the project as they were.
+- **Gates are cumulative, from one list.** `process` merges the documents and checks of every phase up to a gate, and readiness, `jig explain` and the gate package all read that list, so they cannot disagree ([JIG-ADR-010](decisions/ADR-010-make-gates-cumulative.md)).
 
 ## 5. Building blocks
 
@@ -73,7 +74,7 @@ flowchart TB
 | Module | Responsibility |
 |---|---|
 | `main` | Parses the command line, runs each command and prints text or JSON |
-| `process` | Loads and validates the embedded document kinds and lifecycle profiles |
+| `process` | Loads and validates the embedded document kinds and lifecycle profiles; merges what a gate requires from the phases up to it |
 | `templates` | Holds the embedded document and project templates and the rendering assets; fills placeholders |
 | `project`, `bench` | Discover the project and the bench; read `project.toml`, the registry and the vault configuration |
 | `frontmatter` | Parses and writes the document-control subset of YAML ([JIG-ADR-004](decisions/ADR-004-parse-a-strict-front-matter-subset.md)) |
@@ -146,6 +147,7 @@ Measured with the release build on an Apple M4 on 2026-10-01. The check runs git
 | REQ-049 | `check`, `main` |
 | REQ-050 | `templates` |
 | REQ-051 | The continuous integration workflow, `.github/workflows/ci.yml` |
+| REQ-052, REQ-053 | `process`, `gate` |
 
 ## 9. Risks and technical debt
 

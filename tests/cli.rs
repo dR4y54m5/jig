@@ -367,6 +367,138 @@ fn a_go_needs_every_check_unless_it_is_forced() {
 }
 
 #[test]
+fn a_gate_requires_the_documents_and_checks_of_earlier_phases() {
+    let bench = Bench::new();
+    // Started at Build, as an adopted project is: the documents of every
+    // earlier phase are drafts, and none of the earlier gates was held.
+    let root = bench.project(
+        "demo",
+        &[
+            "--kind",
+            "software",
+            "--code",
+            "DM",
+            "--title",
+            "Demo tool",
+            "--phase",
+            "P3",
+        ],
+    );
+    let checks = || -> Vec<(String, bool)> {
+        let output = bench
+            .jig(&root)
+            .args(["gate", "check", "--json"])
+            .output()
+            .unwrap();
+        parse_json(&output.stdout, "gate check")["checks"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|c| {
+                (
+                    c["name"].as_str().unwrap().to_string(),
+                    c["ok"].as_bool().unwrap(),
+                )
+            })
+            .collect()
+    };
+
+    // The TRR lists the documents and checks of Concept, Definition and
+    // Design with its own, each once, and the plan in its strongest state.
+    let listed = checks();
+    let listed: Vec<(&str, bool)> = listed
+        .iter()
+        .map(|(name, ok)| (name.as_str(), *ok))
+        .collect();
+    assert_eq!(
+        listed,
+        [
+            ("project plan released", false),
+            ("concept brief released", false),
+            ("risk register exists", true),
+            ("system requirements specification released", false),
+            ("verification and validation plan released", false),
+            ("architecture description released", false),
+            ("requirements are well formed", false),
+            ("every requirement has a test case", false),
+            ("`jig check` reports no errors", true),
+        ]
+    );
+
+    let srs = root.join("docs/requirements.md");
+    fs::write(
+        &srs,
+        read(&srs)
+            + "\n### REQ-001 Start\n\nThe tool shall start within 1 s.\n\n- **Verification:** Test\n",
+    )
+    .unwrap();
+    let vvp = root.join("docs/vv-plan.md");
+    fs::write(
+        &vvp,
+        read(&vvp)
+            + "\n### TC-001 Start time\n\n- **Verifies:** REQ-001\n- **Method:** Test\n- **Level:** System\n- **Procedure:** `demo --time`\n- **Pass criteria:** Under 1 s.\n",
+    )
+    .unwrap();
+    for doc in [
+        "docs/plan.md",
+        "docs/concept.md",
+        "docs/risks.md",
+        "docs/requirements.md",
+        "docs/vv-plan.md",
+        "docs/architecture.md",
+    ] {
+        strip_guidance(&root.join(doc));
+    }
+    let release = |id: &str| {
+        bench
+            .jig(&root)
+            .args(["doc", "release", id, "--note", "Baseline"])
+            .assert()
+            .success();
+    };
+
+    // Releasing what the gate's own phase requires is not enough.
+    release("VVP");
+    bench.jig(&root).args(["gate", "open"]).assert().success();
+    let record = root.join("docs/reviews/GR-TRR.md");
+    strip_guidance(&record);
+    tick_all(&record);
+    let refused = bench
+        .jig(&root)
+        .args(["gate", "close", "TRR", "--outcome", "go"])
+        .assert()
+        .code(2)
+        .get_output()
+        .stderr
+        .clone();
+    let refused = String::from_utf8_lossy(&refused);
+    for earlier in [
+        "project plan released",
+        "concept brief released",
+        "system requirements specification released",
+        "architecture description released",
+    ] {
+        assert!(
+            refused.contains(&format!("check failed: {earlier}")),
+            "{earlier}: {refused}"
+        );
+    }
+    assert!(!refused.contains("verification and validation plan"));
+    assert!(in_phase(&root, "P3"));
+
+    for id in ["PLN", "CON", "SRS", "ARC"] {
+        release(id);
+    }
+    assert!(checks().iter().all(|(_, ok)| *ok));
+    bench
+        .jig(&root)
+        .args(["gate", "close", "TRR", "--outcome", "go"])
+        .assert()
+        .success();
+    assert!(in_phase(&root, "P4"));
+}
+
+#[test]
 fn check_rejects_teaching_material_and_private_references() {
     let bench = Bench::new();
     let root = bench.project("demo", &PRODUCT);
@@ -948,7 +1080,12 @@ fn explain_prints_the_rules_the_other_commands_enforce() {
 
     assert!(explain(&["kinds"]).contains("System requirements specification"));
     assert!(explain(&["requirements"]).contains("user-friendly"));
-    assert!(explain(&["TRR", "--kind", "software"]).contains("Every requirement is implemented."));
+    let trr = explain(&["TRR", "--kind", "software"]);
+    assert!(trr.contains("Every requirement is implemented."));
+    // A gate lists the documents and checks of the phases before it too.
+    assert!(trr.contains("Concept brief (con): released, since P0"));
+    assert!(trr.contains("Verification and validation plan (vvp): released, since P3"));
+    assert!(trr.contains("requirements-well-formed, rtm-planned"));
     assert!(explain(&["phases", "--kind", "exercise"]).contains("Learning exercise lifecycle"));
 
     // Without a tier, everything is shown and what depends on the tier is marked.
@@ -960,6 +1097,10 @@ fn explain_prints_the_rules_the_other_commands_enforce() {
     assert!(
         !explain(&["PDR", "--kind", "product", "--tier", "desk"]).contains("Interface control")
     );
+    // A later gate still marks what it carries from a tiered requirement.
+    let close = explain(&["CLOSE", "--kind", "product"]);
+    assert!(close.contains("User guide (usr): released (batch tier and up), since P6"));
+    assert!(!explain(&["CLOSE", "--kind", "product", "--tier", "desk"]).contains("User guide"));
 
     // With --json, a topic gives that topic.
     let topic = parse_json(

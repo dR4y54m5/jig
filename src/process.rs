@@ -63,6 +63,19 @@ pub struct Requirement {
     pub min_tier: Option<String>,
 }
 
+/// A document a gate requires: the requirements of its phase and of every
+/// phase before it, merged per kind.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GateRequirement {
+    pub kind: String,
+    /// The strongest state any of those phases asks for.
+    pub state: DocState,
+    /// Set only when the requirements of every tier are listed.
+    pub min_tier: Option<String>,
+    /// The phase that first requires the document in that state.
+    pub phase: String,
+}
+
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(untagged)]
 pub enum Criterion {
@@ -165,6 +178,98 @@ impl Profile {
             .iter()
             .filter(|r| self.applies(tier, r.min_tier.as_deref()))
             .collect()
+    }
+
+    /// The phases from the first to `phase`. With a tier, the earlier phases
+    /// above it are left out; without one, every phase is listed.
+    pub fn phases_through(&self, phase: &Phase, tier: Option<&str>) -> Vec<&Phase> {
+        let end = self
+            .phases
+            .iter()
+            .position(|p| p.id == phase.id)
+            .map_or(self.phases.len(), |at| at + 1);
+        self.phases[..end]
+            .iter()
+            .filter(|p| {
+                tier.is_none() || p.id == phase.id || self.applies(tier, p.min_tier.as_deref())
+            })
+            .collect()
+    }
+
+    /// A tier's place in the profile, with 0 for no tier.
+    fn tier_rank(&self, tier: Option<&str>) -> usize {
+        tier.and_then(|t| self.tiers.iter().position(|x| x == t))
+            .map_or(0, |at| at + 1)
+    }
+
+    /// The documents a gate requires. Gates are cumulative: a gate requires
+    /// the documents of its phase and of every phase before it, each kind once
+    /// and in the strongest state any of those phases asks for. With a tier,
+    /// only what applies at it; without one, the requirements of every tier,
+    /// each with the tier it applies from.
+    pub fn gate_requirements(&self, phase: &Phase, tier: Option<&str>) -> Vec<GateRequirement> {
+        let mut out: Vec<GateRequirement> = Vec::new();
+        for p in self.phases_through(phase, tier) {
+            for req in &p.require {
+                // A requirement applies from the higher of its phase's tier and
+                // its own. Asked about directly, a gate above the project's
+                // tier still lists what its own phase requires.
+                let own_phase = tier.is_some() && p.id == phase.id;
+                let phase_tier = p.min_tier.as_deref().filter(|_| !own_phase);
+                let from = [phase_tier, req.min_tier.as_deref()]
+                    .into_iter()
+                    .max_by_key(|t| self.tier_rank(*t))
+                    .flatten();
+                if tier.is_some() && !self.applies(tier, from) {
+                    continue;
+                }
+                let min_tier = match tier {
+                    Some(_) => None,
+                    None => from.map(str::to_string),
+                };
+                match out
+                    .iter_mut()
+                    .find(|g| g.kind == req.kind && g.min_tier == min_tier)
+                {
+                    Some(g) if req.state > g.state => {
+                        g.state = req.state;
+                        g.phase = p.id.clone();
+                    }
+                    Some(_) => {}
+                    None => out.push(GateRequirement {
+                        kind: req.kind.clone(),
+                        state: req.state,
+                        min_tier,
+                        phase: p.id.clone(),
+                    }),
+                }
+            }
+        }
+        // Listed for every tier, a kind can appear once per tier: drop an
+        // entry that a lower tier already requires in the same state or a stronger one.
+        let all = out.clone();
+        out.retain(|g| {
+            !all.iter().any(|o| {
+                o.kind == g.kind
+                    && o.state >= g.state
+                    && self.tier_rank(o.min_tier.as_deref()) < self.tier_rank(g.min_tier.as_deref())
+            })
+        });
+        out
+    }
+
+    /// The automated checks of a gate: those of its phase and of every phase
+    /// before it, each once.
+    pub fn gate_checks(&self, phase: &Phase, tier: Option<&str>) -> Vec<&str> {
+        let mut out: Vec<&str> = Vec::new();
+        for p in self.phases_through(phase, tier) {
+            for check in &p.checks {
+                if !out.contains(&check.as_str()) {
+                    out.push(check);
+                }
+            }
+        }
+        out
     }
 
     pub fn criteria<'a>(&self, phase: &'a Phase, tier: Option<&str>) -> Vec<&'a str> {
@@ -378,6 +483,131 @@ mod tests {
             .map(|r| r.kind.as_str())
             .collect();
         assert!(retail_kinds.contains(&"icd"));
+    }
+
+    fn required(profile: &Profile, gate: &str, tier: Option<&str>) -> Vec<(String, DocState)> {
+        profile
+            .gate_requirements(profile.phase_by_gate(gate).unwrap(), tier)
+            .into_iter()
+            .map(|g| (g.kind, g.state))
+            .collect()
+    }
+
+    #[test]
+    fn a_gate_requires_the_documents_of_every_phase_up_to_it() {
+        use DocState::{Exists, Released};
+        let software = Process::get().profile("software").unwrap();
+        let kinds = |list: &[(&str, DocState)]| -> Vec<(String, DocState)> {
+            list.iter().map(|(k, s)| (k.to_string(), *s)).collect()
+        };
+        assert_eq!(
+            required(software, "TRR", None),
+            kinds(&[
+                ("pln", Released),
+                ("con", Released),
+                ("rsk", Exists),
+                ("srs", Released),
+                ("vvp", Released),
+                ("arc", Released),
+            ])
+        );
+        // The V&V plan only has to exist until Build asks for its release.
+        let trr = software.phase_by_gate("TRR").unwrap();
+        let vvp = software
+            .gate_requirements(trr, None)
+            .into_iter()
+            .find(|g| g.kind == "vvp")
+            .unwrap();
+        assert_eq!(vvp.phase, "P3");
+        assert_eq!(
+            required(software, "DR", None)[4],
+            ("vvp".to_string(), Exists)
+        );
+        // A gate that requires nothing of its own still carries the earlier phases.
+        assert!(required(software, "CLOSE", None).contains(&("rel".to_string(), Released)));
+    }
+
+    #[test]
+    fn every_gate_requires_what_the_gates_before_it_require() {
+        for profile in &Process::get().profiles {
+            let tiers: Vec<Option<&str>> = if profile.tiers.is_empty() {
+                vec![None]
+            } else {
+                profile.tiers.iter().map(|t| Some(t.as_str())).collect()
+            };
+            for tier in tiers {
+                let phases = profile.phases_for(tier);
+                for pair in phases.windows(2) {
+                    let later = profile.gate_requirements(pair[1], tier);
+                    for earlier in profile.gate_requirements(pair[0], tier) {
+                        assert!(
+                            later
+                                .iter()
+                                .any(|g| g.kind == earlier.kind && g.state >= earlier.state),
+                            "{} {}: {} is dropped or weakened",
+                            profile.kind,
+                            pair[1].id,
+                            earlier.kind
+                        );
+                    }
+                    for (i, g) in later.iter().enumerate() {
+                        assert!(
+                            later[i + 1..].iter().all(|o| o.kind != g.kind),
+                            "{} {}: {} is listed twice",
+                            profile.kind,
+                            pair[1].id,
+                            g.kind
+                        );
+                    }
+                    let checks = profile.gate_checks(pair[1], tier);
+                    for check in profile.gate_checks(pair[0], tier) {
+                        assert!(checks.contains(&check));
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn a_tier_leaves_out_what_applies_only_above_it() {
+        use DocState::Released;
+        let product = Process::get().profile("product").unwrap();
+        let has = |gate: &str, tier: Option<&str>, kind: &str| {
+            required(product, gate, tier)
+                .iter()
+                .any(|(k, s)| k == kind && *s == Released)
+        };
+        // The interface control document and the FMEA are required from the batch tier.
+        assert!(!has("CDR", Some("desk"), "icd") && !has("CDR", Some("desk"), "fmea"));
+        assert!(has("CDR", Some("batch"), "icd") && has("CDR", Some("batch"), "fmea"));
+        // A desk product has no production phase, so its closeout carries none of that phase's documents.
+        assert!(!has("CLOSE", Some("desk"), "mfg") && !has("CLOSE", Some("desk"), "usr"));
+        assert!(has("CLOSE", Some("batch"), "mfg") && has("CLOSE", Some("batch"), "usr"));
+        assert!(!has("CLOSE", Some("batch"), "cmp") && has("CLOSE", Some("retail"), "cmp"));
+        // Asked about directly, the production gate still lists its own documents.
+        assert!(has("PRR", Some("desk"), "mfg") && !has("PRR", Some("desk"), "cmp"));
+
+        // Without a tier, each kind is listed once, with the tier it applies from.
+        let close = product.phase_by_gate("CLOSE").unwrap();
+        let every_tier = product.gate_requirements(close, None);
+        let usr: Vec<_> = every_tier.iter().filter(|g| g.kind == "usr").collect();
+        assert_eq!(usr.len(), 1);
+        assert_eq!(usr[0].state, Released);
+        assert_eq!(usr[0].min_tier.as_deref(), Some("batch"));
+        assert_eq!(usr[0].phase, "P6");
+    }
+
+    #[test]
+    fn a_gate_runs_the_checks_of_every_phase_up_to_it() {
+        let software = Process::get().profile("software").unwrap();
+        let checks = |gate: &str| software.gate_checks(software.phase_by_gate(gate).unwrap(), None);
+        assert!(checks("CR").is_empty());
+        assert_eq!(checks("TRR"), ["requirements-well-formed", "rtm-planned"]);
+        assert_eq!(
+            checks("RRR"),
+            ["requirements-well-formed", "rtm-planned", "rtm-verified"]
+        );
+        assert_eq!(checks("CLOSE"), checks("RRR"));
     }
 
     #[test]
