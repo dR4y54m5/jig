@@ -2,8 +2,8 @@
 id: JIG-SRS
 title: System requirements specification
 kind: srs
-revision: C
-status: released
+revision: D
+status: draft
 date: 2026-10-01
 author: dR4y54m5
 gate: SRR
@@ -453,6 +453,15 @@ jig shall provide for every document kind a template that contains template guid
 - **Priority:** Should
 - **Rationale:** A document left as its template can then never be released.
 - **Source:** N-05
+
+### REQ-051 Continuous integration
+
+When a commit is pushed to the `main` branch of the jig repository, continuous integration shall run `cargo test` and `jig check` on that commit.
+
+- **Verification:** Demonstration
+- **Priority:** Must
+- **Rationale:** A new machine builds jig from its repository. A run on a machine that holds only the repository and its tools shows, for every change, that the build and the tests depend on nothing else.
+- **Source:** N-07
 
 ## 4. Performance requirements
 

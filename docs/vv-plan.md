@@ -2,8 +2,8 @@
 id: JIG-VVP
 title: Verification and validation plan
 kind: vvp
-revision: D
-status: released
+revision: E
+status: draft
 date: 2026-10-01
 author: dR4y54m5
 gate: TRR
@@ -26,6 +26,8 @@ This plan defines how JIG is verified against its [system requirements](requirem
 
 Every automated test runs with `cargo test`. The PDF test renders only when Pandoc and Typst are installed and reports that it skipped otherwise.
 
+Continuous integration runs `cargo test` and `jig check` on every push to `main`, on a machine that holds only the repository and the tools of section 3 (TC-032). The other inspections and demonstrations run on the development machine.
+
 ## 3. Environments and equipment
 
 | Item | Version |
@@ -35,6 +37,7 @@ Every automated test runs with `cargo test`. The PDF test renders only when Pand
 | Pandoc | 3.11 |
 | Typst | 0.15.1 |
 | git | 2.50 |
+| Continuous integration | GitHub Actions, on a GitHub-hosted macOS runner with the stable Rust toolchain, and Pandoc and Typst installed from Homebrew |
 
 ## 4. Test cases
 
@@ -285,6 +288,14 @@ Every automated test runs with `cargo test`. The PDF test renders only when Pand
 - **Level:** System
 - **Procedure:** `cargo test --test cli -- release_is_refused_while_template_guidance_remains templates_hold_guidance_and_no_sample_content` and `cargo test --bin jig templates::`
 - **Pass criteria:** The tests pass: a draft that still holds guidance is not released; a new project reports no requirement and no open risk; every template contains guidance, and opens and closes as the process specifies.
+
+### TC-032 Continuous integration runs the tests and the check
+
+- **Verifies:** REQ-051
+- **Method:** Demonstration
+- **Level:** System
+- **Procedure:** Push a commit to `main`, then read the run that the push started with `gh run list --branch main --limit 1` and `gh run view <run> --log`.
+- **Pass criteria:** The run starts from the push without a manual step, names the pushed commit and concludes with success. Its log shows Pandoc and Typst installed, so that no test is skipped, `cargo test` reporting no failed test, and `jig check` reporting 0 errors.
 
 ## 5. Validation
 

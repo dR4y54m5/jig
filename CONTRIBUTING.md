@@ -25,6 +25,7 @@ How jig is organised, built and tested, and how it is changed without breaking t
 | `assets/bench.typ`, `assets/bench.lua` | Page design and the Pandoc filter ([JIG-ADR-002](docs/decisions/ADR-002-render-pdfs-with-pandoc-and-typst.md)) |
 | `skill/SKILL.md` | The agent skill, linked into the agent's skills directory |
 | `tests/cli.rs` | System tests that drive the binary against a temporary bench |
+| `.github/workflows/ci.yml` | Continuous integration: `cargo test` and `jig check` on every push to `main` and on pull requests |
 
 `process/`, `templates/` and `assets/` are compiled into the binary. After changing any of them, rebuild and reinstall; the installed `jig` otherwise keeps the old rules.
 
@@ -39,6 +40,8 @@ jig check                     # jig's own documents
 ```
 
 System tests set `JIG_BENCH` to a temporary directory, so they never touch a real bench.
+
+Continuous integration runs `cargo test` and `jig check` on a macOS runner with Pandoc and Typst installed, so no test is skipped there. It has no vault, so it checks no private terms; the pre-commit hook does that on the development machine.
 
 ## 3. Changing behaviour
 

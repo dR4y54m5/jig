@@ -2,8 +2,8 @@
 id: JIG-PLN
 title: Project plan
 kind: pln
-revision: B
-status: released
+revision: C
+status: draft
 date: 2026-10-01
 author: dR4y54m5
 gate: CR
@@ -43,7 +43,7 @@ jig is the command-line tool that implements the bench engineering process defin
 |---|---|---|
 | CR, SRR and DR | Not held. The project was adopted at P3 Build on 2026-09-30; the concept brief, requirements and architecture were written after the first implementation. | The process specification and the tool were developed together, with the specification as the design input. |
 | Test procedures | The verification and validation plan holds every procedure; there are no separate TP documents. | Each test case is either a `cargo test` command or an inspection or demonstration short enough to state in the test case itself. |
-| Continuous integration | Tests run on the development machine until the repository is published. | There is no remote yet. |
+| Continuous integration | A GitHub Actions workflow runs `cargo test` and `jig check` on every push to `main` (REQ-051). The inspections and demonstrations of the verification and validation plan run on the development machine. | They read rendered pages or source code and are not automated. |
 
 ## 5. Schedule
 

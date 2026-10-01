@@ -2,8 +2,8 @@
 id: JIG-ARC
 title: Architecture description
 kind: arc
-revision: C
-status: released
+revision: D
+status: draft
 date: 2026-10-01
 author: dR4y54m5
 gate: DR
@@ -145,6 +145,7 @@ Measured with the release build on an Apple M4 on 2026-10-01. The check runs git
 | REQ-048 | `explain` |
 | REQ-049 | `check`, `main` |
 | REQ-050 | `templates` |
+| REQ-051 | The continuous integration workflow, `.github/workflows/ci.yml` |
 
 ## 9. Risks and technical debt
 

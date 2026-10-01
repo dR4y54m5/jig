@@ -1,0 +1,39 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: cargo test and jig check
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install the stable Rust toolchain
+        run: |
+          rustup update stable
+          rustup default stable
+
+      # The PDF tests skip themselves when either program is missing.
+      - name: Install Pandoc and Typst
+        run: brew install pandoc typst
+
+      - name: Show tool versions
+        run: |
+          rustc --version
+          cargo --version
+          pandoc --version | head -n 1
+          typst --version
+          git --version
+
+      - name: Run the tests
+        run: cargo test --locked
+
+      - name: Check jig's own documents
+        run: cargo run --locked --quiet -- check
