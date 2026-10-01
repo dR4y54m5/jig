@@ -17,7 +17,9 @@ This specification defines the engineering process for every project on a bench:
 
 It applies to hardware products, software, reverse-engineering projects and learning exercises run by one engineer, usually working with an AI pair. jig implements the process, and `jig explain` prints its rules from the same data jig enforces (JIG-ADR-001).
 
-## 2. Normative references
+## 2. References
+
+The process draws on the documents below and claims conformance to none of them. They were used as published summaries and guidance describe them; no clause-by-clause assessment was made. Section 15.2 lists what the process leaves out.
 
 | Reference | Used for |
 |---|---|
@@ -34,6 +36,7 @@ It applies to hardware products, software, reverse-engineering projects and lear
 | R. G. Cooper, Stage-Gate | Go and kill decisions at gates, scaled by risk |
 | EVT, DVT and PVT practice | Hardware validation builds |
 | ASME Y14.35 | Revision letters |
+| EIA-649, Configuration management | Change orders and release records |
 | Diátaxis | Documentation types, the basis of the separation rule |
 | DIN SPEC 3105-1 and the OSHWA definition | Documentation of public hardware |
 
@@ -117,7 +120,7 @@ The rule follows the Diátaxis documentation types. When two documents cover the
 
 ### 5.3 References
 
-References run one way. Vault documents cite project documents by ID, such as `EM4-SRS` or `EM4-ADR-004`. Project documents never mention the vault, its paths or its contents.
+References run one way. Vault documents cite project documents by ID, such as `EM4-SRS` or `EM4-ADR-004`. A project repository never reveals where the vault is or what it holds: it has no path into the vault, no link to it and none of its private terms. Describing the vault as a part of the bench, as this specification does, reveals neither.
 
 ### 5.4 Enforcement
 
@@ -360,9 +363,11 @@ Every page shows the document ID and revision in its header, and the project and
 
 Each project records its tailoring in section 4 of its project plan, such as documents merged at its tier or gates not held when a project is adopted mid-life, as NASA practice requires for significant tailoring.
 
-### 15.2 Of the references
+### 15.2 Practices left out
 
-| Omitted | Reason |
+The references in section 2 describe more than one engineer needs. The process leaves these out:
+
+| Left out | Reason |
 |---|---|
 | SysML and model-based systems engineering tools | Mermaid diagrams and tables cover the architecture views a solo engineer needs |
 | A separate stakeholder requirements specification (ISO/IEC/IEEE 29148) | Stakeholder needs are listed in the concept brief |

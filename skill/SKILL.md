@@ -11,7 +11,7 @@ jig implements a staged engineering process: phases closed by gate reviews, cont
 
 1. Run jig non-interactively with flags. Read results with `--json`. Run `jig new` and `jig adopt` with `--dry-run` first and show the plan before applying it.
 2. After creating or editing any document in a project repository, run `jig check` and fix every error before finishing the turn.
-3. Decide where content belongs before writing it (`jig explain separation`). Project repositories hold what is needed to build, verify, operate or change the product. Explanations of general concepts, labs, code explanations written to teach, retrospectives and roadmaps go to the vault (`jig vault path`). Project documents never mention the vault.
+3. Decide where content belongs before writing it (`jig explain separation`). Project repositories hold what is needed to build, verify, operate or change the product. Explanations of general concepts, labs, code explanations written to teach, retrospectives and roadmaps go to the vault (`jig vault path`). Nothing in a project repository reveals where the vault is or what it holds.
 4. Create documents with `jig doc new`, never by hand. Change released documents only after `jig doc revise`. Release with `jig doc release <ID> --note "<what changed>"`. Never edit `revision`, `status` or `date` by hand.
 5. Confirming gate entry criteria and deciding gate outcomes belong to the user. Never tick a criterion or close a gate on your own judgment.
 6. Commit, tag and push only when the user asks.

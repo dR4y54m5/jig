@@ -11,12 +11,12 @@ How jig is organised, built and tested, and how it is changed without breaking t
 | `src/project.rs`, `src/bench.rs` | `project.toml`, the bench layout, the registry and the vault's `jig.toml` |
 | `src/frontmatter.rs` | The document-control subset of YAML ([JIG-ADR-004](docs/decisions/ADR-004-parse-a-strict-front-matter-subset.md)) |
 | `src/markdown.rs` | Fences, prose, headings and links, aware of code blocks, comments and code spans |
-| `src/docs.rs` | Documents, IDs, paths, revision letters, drafting, release and revise |
-| `src/trace.rs` | Requirements, test cases, results and the traceability matrix |
+| `src/docs.rs` | Documents, IDs, paths, revision letters, drafting, release and revise; the list of files `jig check` covers ([JIG-ADR-009](docs/decisions/ADR-009-check-the-files-git-would-commit.md)) |
+| `src/trace.rs` | Requirements, test cases, results, basis stamps and the traceability matrix ([JIG-ADR-008](docs/decisions/ADR-008-stamp-each-test-result-with-what-it-verified.md)) |
 | `src/check.rs` | Every `jig check` rule |
-| `src/gate.rs` | Gate readiness, review records and decisions |
+| `src/gate.rs` | Gate readiness, review records, decisions and phase changes |
 | `src/render.rs` | Diagrams, Markdown to Typst, PDF and gate packages |
-| `src/scaffold.rs` | Plans for `init`, `new`, `adopt` and `setup` ([JIG-ADR-006](docs/decisions/ADR-006-plan-every-change-before-applying-it.md)) |
+| `src/scaffold.rs` | Plans for `init`, `new`, `adopt` and `setup` ([JIG-ADR-006](docs/decisions/ADR-006-plan-every-change-before-applying-it.md)); the pre-commit hook and the agent files ([JIG-ADR-007](docs/decisions/ADR-007-keep-agent-instructions-in-the-vault-and-install.md)) |
 | `src/explain.rs` | `jig explain` text |
 | `process/kinds.toml`, `process/profiles/*.toml` | The process as data ([JIG-ADR-001](docs/decisions/ADR-001-encode-the-process-as-data-embedded-in-the-binary.md)) |
 | `templates/docs/` | One body template per document kind |
@@ -68,11 +68,11 @@ The unit tests reject a kind without a template, a template without guidance or 
 
 ### 4.2 A lifecycle
 
-Profiles live in `process/profiles/<kind>.toml` and are listed in `PROFILES` in `src/process.rs`. Phases carry their gate, question, industry equivalent, required documents (`require`), automated checks (`checks`) and entry criteria. `min_tier` limits a phase, requirement or criterion to a tier and above. Update JIG-SPC-001 sections 7 and 8.3.
+Profiles live in `process/profiles/<kind>.toml` and are listed in `PROFILES` in `src/process.rs`. Phases carry their gate, question, industry equivalent, required documents (`require`), automated checks (`checks`) and entry criteria. A criterion never repeats an automated check, and a phase without a gate is left with `jig phase next`. `min_tier` limits a phase, requirement or criterion to a tier and above. Update JIG-SPC-001 sections 7 and 8.3.
 
 ### 4.3 A `jig check` rule
 
-Add a method to `Checker` in `src/check.rs` with a rule ID of the form `area.name`, and call it from `check`. Scan prose with `markdown::prose`, which already skips code blocks, HTML comments and code spans. Run `jig check` in this repository to catch false positives against jig's own documents, add a system test, and describe the rule in JIG-SPC-001 and in `src/explain.rs` when it enforces the process.
+Add a method to `Checker` in `src/check.rs` with a rule ID of the form `area.name`, and call it from `check`. Scan prose with `markdown::prose`, which already skips code blocks, HTML comments and code spans. A rule about private material belongs in `private_references`, which reads every text file and skips nothing. Run `jig check` in this repository to catch false positives against jig's own documents, add a system test, and describe the rule in JIG-SPC-001 and in `src/explain.rs` when it enforces the process.
 
 ### 4.4 Rendering
 
