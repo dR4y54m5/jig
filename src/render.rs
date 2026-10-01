@@ -300,6 +300,7 @@ fn rtm_markdown(matrix: &Matrix, date: &str) -> String {
     );
     for coverage in [
         Coverage::Verified,
+        Coverage::Stale,
         Coverage::Planned,
         Coverage::Failed,
         Coverage::NotCovered,

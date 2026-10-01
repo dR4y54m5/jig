@@ -382,6 +382,33 @@ When jig creates a git repository, jig shall name its initial branch `main`.
 - **Rationale:** Every repository on the bench has the same default branch, whatever the machine's git configuration.
 - **Source:** N-01
 
+### REQ-043 Result basis
+
+When `jig doc new tr` creates a test report, jig shall list each test case of the verification and validation plan with a basis stamp derived from the test case and the requirements it verifies.
+
+- **Verification:** Test
+- **Priority:** Should
+- **Rationale:** A result records what it was obtained against, without the author computing anything.
+- **Source:** N-04
+
+### REQ-044 Stale results
+
+If a test case or a requirement it verifies has changed since the basis stamp of the test case's latest result, then `jig trace` shall report the requirement as stale.
+
+- **Verification:** Test
+- **Priority:** Must
+- **Rationale:** A result proves the requirement as it read when the test was run, not as it reads now.
+- **Source:** N-04
+
+### REQ-045 Results not run
+
+`jig trace` shall disregard a result of Not run when it selects the latest result of a test case.
+
+- **Verification:** Test
+- **Priority:** Should
+- **Rationale:** A case that was not run says nothing about the requirement and must not hide an earlier result.
+- **Source:** N-04
+
 ## 4. Performance requirements
 
 ### REQ-022 Check time

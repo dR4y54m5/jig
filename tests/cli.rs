@@ -736,6 +736,85 @@ fn check_enforces_requirement_rules() {
     );
 }
 
+#[test]
+fn a_test_report_is_stamped_and_its_results_go_stale() {
+    let bench = Bench::new();
+    let root = bench.project(
+        "demo",
+        &[
+            "--kind",
+            "software",
+            "--code",
+            "DM",
+            "--title",
+            "Demo tool",
+            "--phase",
+            "P3",
+        ],
+    );
+    let srs = root.join("docs/requirements.md");
+    fs::write(
+        &srs,
+        read(&srs)
+            + "\n### REQ-101 Start\n\nThe tool shall start within 1 s.\n\n- **Verification:** Test\n",
+    )
+    .unwrap();
+    let vvp = root.join("docs/vv-plan.md");
+    fs::write(
+        &vvp,
+        read(&vvp)
+            + "\n### TC-101 Start time\n\n- **Verifies:** REQ-101\n- **Method:** Test\n- **Level:** System\n- **Procedure:** `demo --time`\n- **Pass criteria:** Under 1 s.\n",
+    )
+    .unwrap();
+
+    // A new report lists the test case, not run, with its basis stamp.
+    let created = bench
+        .jig(&root)
+        .args(["doc", "new", "tr", "--title", "First run", "--json"])
+        .output()
+        .unwrap();
+    let created = parse_json(&created.stdout, "doc new tr");
+    let report = root.join(created["path"].as_str().unwrap());
+    let text = read(&report);
+    let stub = "### TC-101 Start time\n\n- **Result:** Not run\n- **Evidence:**\n- **Basis:** ";
+    assert!(text.contains(stub), "{text}");
+
+    let coverage = |bench: &Bench| {
+        let output = bench.jig(&root).args(["trace", "--json"]).output().unwrap();
+        let matrix = parse_json(&output.stdout, "trace");
+        let row = matrix["rows"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|row| row["requirement"] == "REQ-101")
+            .unwrap()
+            .clone();
+        row["coverage"].as_str().unwrap().to_string()
+    };
+    assert_eq!(coverage(&bench), "planned", "a case not run is no result");
+
+    fs::write(
+        &report,
+        text.replace(
+            "### TC-101 Start time\n\n- **Result:** Not run",
+            "### TC-101 Start time\n\n- **Result:** Pass",
+        ),
+    )
+    .unwrap();
+    assert_eq!(coverage(&bench), "verified");
+
+    // The requirement changes after the run: the result no longer proves it.
+    fs::write(&srs, read(&srs).replace("within 1 s", "within 2 s")).unwrap();
+    assert_eq!(coverage(&bench), "stale");
+    assert!(
+        check_findings(&bench, &root)
+            .iter()
+            .any(|(file, rule, severity)| file.starts_with("docs/reports/")
+                && rule == "test.stale"
+                && severity == "warning")
+    );
+}
+
 fn tools_available() -> bool {
     ["pandoc", "typst"].iter().all(|tool| {
         std::process::Command::new(tool)

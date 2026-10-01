@@ -673,8 +673,29 @@ impl Checker<'_> {
                 }
             }
         }
+        // The latest result of each test case, where it is stale.
+        let stale: BTreeSet<(String, String)> = trace::Matrix::build(docs)
+            .rows
+            .into_iter()
+            .flat_map(|row| row.outcomes)
+            .filter(|outcome| outcome.stale)
+            .map(|outcome| (outcome.report, outcome.test))
+            .collect();
         for doc in docs.iter().filter(|d| d.is_kind("tr")) {
+            let report = doc.id().unwrap_or(&doc.rel).to_string();
             for result in trace::items(doc.body(), doc.body_line, "TC") {
+                if stale.contains(&(report.clone(), result.id.clone())) {
+                    self.add(
+                        Severity::Warning,
+                        "test.stale",
+                        doc,
+                        result.line,
+                        format!(
+                            "{}: this result is stale; the test case or a requirement it verifies changed after the run",
+                            result.id
+                        ),
+                    );
+                }
                 if let Some(value) = result.attr("Result")
                     && !trace::RESULTS.contains(&value)
                 {

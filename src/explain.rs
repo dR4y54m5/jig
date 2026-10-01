@@ -257,7 +257,13 @@ Test cases in the V&V plan use the same shape:
   - **Pass criteria:** The lamp lights within 50 ms in 20 of 20 trials.
 
 Test reports record `- **Result:** Pass | Fail | Blocked | Not run` under the
-same TC heading; `jig trace` joins all three into the traceability matrix.",
+same TC heading; `jig trace` joins all three into the traceability matrix,
+taking the latest result of each test case other than Not run.
+
+`jig doc new tr` lists every test case with a `- **Basis:**` stamp of the
+test case and of the statement and verification method of each requirement it
+verifies. When either changes after the run, `jig trace` reports the
+requirement as Stale instead of Verified, until the test is run again.",
         METHODS.join(", "),
         VAGUE_TERMS.join(", ")
     )

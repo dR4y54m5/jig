@@ -312,7 +312,9 @@ Each requirement is a heading `REQ-NNN Title` (level three, or level four inside
 
 ### 11.2 Test cases and results
 
-Each test case in the verification and validation plan is a heading `TC-NNN Title` with the attributes Verifies (requirement IDs), Method, Level, Procedure (a TP document or an automated test command) and Pass criteria. Test reports repeat the heading for each case run, with a Result of Pass, Fail, Blocked or Not run and its Evidence. `jig trace` joins requirements, test cases and the latest result of each case; only results in released test reports count toward the DVT and RRR gates.
+Each test case in the verification and validation plan is a heading `TC-NNN Title` with the attributes Verifies (requirement IDs), Method, Level, Procedure (a TP document or an automated test command) and Pass criteria. Test reports repeat the heading for each case run, with a Result of Pass, Fail, Blocked or Not run and its Evidence. `jig trace` joins requirements, test cases and the latest result of each case other than Not run, which is the absence of a result; only results in released test reports count toward the DVT and RRR gates.
+
+`jig doc new tr` lists every test case of the plan with a Basis: a stamp computed from the test case's method, level, procedure and pass criteria and from the statement and verification method of each requirement it verifies. When either changes after the run, the stamp no longer matches, and `jig trace` reports the requirement as Stale instead of Verified until the test is run again. Titles, priorities, rationales and line breaks do not affect a stamp. A result recorded without a stamp is taken as it stands.
 
 ### 11.3 Risks
 

@@ -11,12 +11,9 @@ This report records the results of running test cases against one build of {{cod
 
 ## 3. Results
 
-<!-- guide: One heading per test case run, using its ID from the V&V plan. The result is Pass, Fail, Blocked or Not run; jig reads it for the traceability matrix. -->
+<!-- guide: One heading per test case, using its ID from the V&V plan. The result is Pass, Fail, Blocked or Not run; jig reads it for the traceability matrix. A case left as Not run counts as no result. Keep each Basis line: it stamps the test case and its requirements as they were for this run, so that a later change to either shows the result as stale. -->
 
-### TC-001 Title
-
-- **Result:** Not run
-- **Evidence:** 
+{{results}}
 
 ## 4. Anomalies
 

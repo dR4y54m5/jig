@@ -253,6 +253,14 @@ Every automated test runs with `cargo test`. The PDF test renders only when Pand
 - **Procedure:** `cargo test --test cli new_repositories_start_on_main`
 - **Pass criteria:** The test passes: with git configured for another default branch, the vault and a new project are both on `main`.
 
+### TC-028 Results are stamped and go stale
+
+- **Verifies:** REQ-043, REQ-044, REQ-045
+- **Method:** Test
+- **Level:** System
+- **Procedure:** `cargo test --bin jig trace::` and `cargo test --test cli a_test_report_is_stamped_and_its_results_go_stale`
+- **Pass criteria:** The tests pass: a new report lists every test case as not run with a stamp; a recorded pass is verified; rewording the requirement or retargeting the test case makes the result stale, and rewrapping the text or changing another requirement does not; a stale result is a warning in `jig check`; a later result of Not run does not replace an earlier result.
+
 ## 5. Validation
 
 | Need | Validation activity | Result |

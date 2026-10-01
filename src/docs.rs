@@ -419,7 +419,13 @@ pub fn draft(project: &Project, existing: &[Doc], req: DocRequest) -> Result<Dra
     let template = templates::doc_template(&kind.key)
         .ok_or_else(|| anyhow!("no template for {}", kind.key))?;
     let lifecycle = lifecycle_table(project);
-    let mut vars: Vec<(&str, &str)> = vec![
+    // Values the caller gives come first, so that they win over the defaults.
+    let mut vars: Vec<(&str, &str)> = req
+        .vars
+        .iter()
+        .map(|(k, v)| (k.as_str(), v.as_str()))
+        .collect();
+    let defaults: [(&str, &str); 12] = [
         ("title", &title),
         ("name", &project.meta.name),
         ("code", code),
@@ -431,8 +437,9 @@ pub fn draft(project: &Project, existing: &[Doc], req: DocRequest) -> Result<Dra
         ("author", &req.author),
         ("gate", &gate),
         ("lifecycle", &lifecycle),
+        ("results", ""),
     ];
-    vars.extend(req.vars.iter().map(|(k, v)| (k.as_str(), v.as_str())));
+    vars.extend(defaults);
     let body = templates::fill(template, &vars);
 
     Ok(Draft {

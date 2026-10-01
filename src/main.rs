@@ -515,6 +515,13 @@ fn doc_command(bench: &Bench, cwd: &Path, command: DocCommand, json: bool) -> Re
             if kind.naming == Naming::Gate {
                 bail!("gate review records are created with `jig gate open`");
             }
+            // A test report starts with every test case of the plan, stamped
+            // with what it verifies today.
+            let vars = if kind.key == "tr" {
+                vec![("results".to_string(), trace::result_stubs(&all))]
+            } else {
+                Vec::new()
+            };
             let draft = docs::draft(
                 &project,
                 &all,
@@ -524,7 +531,7 @@ fn doc_command(bench: &Bench, cwd: &Path, command: DocCommand, json: bool) -> Re
                     gate: None,
                     date,
                     author,
-                    vars: Vec::new(),
+                    vars,
                 },
             )?;
             if let Some(parent) = draft.path.parent() {
@@ -767,6 +774,7 @@ struct ProjectStatus {
     warnings: usize,
     requirements: usize,
     verified: usize,
+    stale: usize,
     not_covered: usize,
     open_risks: usize,
     gate_ready: Option<bool>,
@@ -803,6 +811,7 @@ fn status_of(bench: &Bench, project: &Project) -> Result<(ProjectStatus, Option<
         warnings,
         requirements: matrix.rows.len(),
         verified: matrix.count(Coverage::Verified),
+        stale: matrix.count(Coverage::Stale),
         not_covered: matrix.count(Coverage::NotCovered),
         open_risks,
         gate_ready: readiness.as_ref().map(gate::Readiness::ready),
@@ -830,8 +839,8 @@ fn project_status(bench: &Bench, project: &Project, json: bool) -> Result<ExitCo
     println!("Documents:  {} ({} released)", s.documents, s.released);
     println!("Check:      {} errors, {} warnings", s.errors, s.warnings);
     println!(
-        "Trace:      {} requirements, {} verified, {} without a test case",
-        s.requirements, s.verified, s.not_covered
+        "Trace:      {} requirements, {} verified, {} stale, {} without a test case",
+        s.requirements, s.verified, s.stale, s.not_covered
     );
     println!("Risks:      {} open", s.open_risks);
     if let Some(r) = readiness {
