@@ -87,6 +87,21 @@ fn check_findings(bench: &Bench, root: &Path) -> Vec<(String, String, String)> {
         .collect()
 }
 
+fn git(dir: &Path, args: &[&str]) -> String {
+    let output = std::process::Command::new("git")
+        .arg("-C")
+        .arg(dir)
+        .args(args)
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "git {args:?}: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    String::from_utf8_lossy(&output.stdout).trim().to_string()
+}
+
 fn in_phase(root: &Path, phase: &str) -> bool {
     read(&root.join("project.toml")).contains(&format!("phase = \"{phase}\""))
 }
@@ -559,7 +574,10 @@ fn adopting_an_existing_repository_keeps_its_files() {
     let bench = Bench::new();
     let repo = bench.root.join("elsewhere/tool");
     fs::create_dir_all(&repo).unwrap();
+    git(&repo, &["init", "-q"]);
     fs::write(repo.join("README.md"), "# Existing\n").unwrap();
+    fs::write(repo.join(".gitignore"), "node_modules\n").unwrap();
+    fs::write(repo.join("CLAUDE.md"), "# Existing rules\n").unwrap();
     bench
         .jig(&bench.root)
         .arg("adopt")
@@ -569,17 +587,34 @@ fn adopting_an_existing_repository_keeps_its_files() {
         ])
         .assert()
         .success();
+    assert_eq!(read(&repo.join("README.md")), "# Existing\n");
     assert_eq!(
-        fs::read_to_string(repo.join("README.md")).unwrap(),
-        "# Existing\n"
+        read(&repo.join(".gitignore")),
+        "node_modules\n/build/\n",
+        "only the build directory is added"
+    );
+    assert_eq!(
+        read(&repo.join("CLAUDE.md")),
+        "# Existing rules\n",
+        "the repository's own agent instructions are left alone"
+    );
+    assert_eq!(
+        read(&bench.root.join("vault/projects/tool/CLAUDE.md")),
+        "# Existing rules\n",
+        "and become the copy in the project's vault folder"
     );
     assert!(
         repo.join("docs/concept.md").exists(),
         "P0 documents are drafted when starting in P1"
     );
     assert!(repo.join("docs/requirements.md").exists());
-    let config = fs::read_to_string(repo.join("project.toml")).unwrap();
-    assert!(config.contains("phase = \"P1\""));
+    assert!(in_phase(&repo, "P1"));
+
+    // `jig setup` then installs the vault copy in its place.
+    bench.jig(&repo).arg("setup").assert().success();
+    let installed = read(&repo.join("CLAUDE.md"));
+    assert!(installed.starts_with("<!-- Installed by `jig setup`"));
+    assert!(installed.ends_with("# Existing rules\n"));
 }
 
 #[test]
@@ -834,23 +869,30 @@ fn every_command_prints_json() {
 }
 
 #[test]
-fn setup_installs_agent_files_without_overwriting() {
+fn agent_instructions_are_installed_from_the_vault() {
     let bench = Bench::new();
     let root = bench.project("demo", &PRODUCT);
-    let claude = root.join("CLAUDE.md");
+    let installed = root.join("CLAUDE.md");
+    let master = bench.root.join("vault/projects/demo/CLAUDE.md");
     let settings = root.join(".claude/settings.local.json");
-    assert!(
-        fs::read_to_string(&claude)
-            .unwrap()
-            .contains("instructions for agents")
-    );
-    assert!(
-        fs::read_to_string(root.join(".gitignore"))
-            .unwrap()
-            .contains(".claude/settings.local.json")
-    );
 
-    fs::write(&claude, "# Hand-edited\n").unwrap();
+    // A new project gets its instructions in the vault and a read-only copy.
+    assert!(read(&master).contains("instructions for agents"));
+    let copy = read(&installed);
+    assert!(copy.starts_with("<!-- Installed by `jig setup`") && copy.ends_with(&read(&master)));
+    assert!(fs::metadata(&installed).unwrap().permissions().readonly());
+
+    // Neither agent file is named in a tracked file, and git sees neither.
+    assert!(
+        !read(&root.join(".gitignore"))
+            .to_lowercase()
+            .contains("claude")
+    );
+    let seen = git(&root, &["status", "--porcelain", "--untracked-files=all"]);
+    assert!(!seen.to_lowercase().contains("claude"), "{seen}");
+
+    // The vault copy is the one to edit; `jig setup` installs it again.
+    fs::write(&master, "# Demo rules\n").unwrap();
     fs::write(
         &settings,
         r#"{ "permissions": { "allow": ["Bash(ls)"] }, "model": "x" }"#,
@@ -858,10 +900,8 @@ fn setup_installs_agent_files_without_overwriting() {
     .unwrap();
     bench.jig(&root).arg("setup").assert().success();
     bench.jig(&root).arg("setup").assert().success();
-
-    assert_eq!(fs::read_to_string(&claude).unwrap(), "# Hand-edited\n");
-    let value: serde_json::Value =
-        serde_json::from_str(&fs::read_to_string(&settings).unwrap()).unwrap();
+    assert!(read(&installed).ends_with("# Demo rules\n"));
+    let value: serde_json::Value = serde_json::from_str(&read(&settings)).unwrap();
     let dirs = value["permissions"]["additionalDirectories"]
         .as_array()
         .unwrap();
@@ -872,6 +912,135 @@ fn setup_installs_agent_files_without_overwriting() {
         "existing permissions are kept"
     );
     assert_eq!(value["model"], "x", "other settings are kept");
+
+    // A copy lost on this machine comes back from the vault.
+    fs::remove_file(&installed).unwrap();
+    bench.jig(&root).arg("setup").assert().success();
+    assert!(read(&installed).ends_with("# Demo rules\n"));
+}
+
+#[test]
+fn check_rejects_tracked_agent_files() {
+    let bench = Bench::new();
+    let root = bench.project("demo", &SOFTWARE);
+    let tracked = |bench: &Bench| -> Vec<String> {
+        check_findings(bench, &root)
+            .into_iter()
+            .filter(|(_, rule, severity)| rule == "separation.agent-file" && severity == "error")
+            .map(|(file, _, _)| file)
+            .collect()
+    };
+    assert!(tracked(&bench).is_empty());
+    git(
+        &root,
+        &["add", "--force", "CLAUDE.md", ".claude/settings.local.json"],
+    );
+    assert_eq!(
+        tracked(&bench),
+        [".claude/settings.local.json", "CLAUDE.md"]
+    );
+}
+
+#[test]
+fn the_hook_blocks_a_commit_that_fails_or_cannot_be_checked() {
+    let bench = Bench::new();
+    let root = bench.project("demo", &SOFTWARE);
+    let hook = root.join(".git/hooks/pre-commit");
+    let run = |path: &str| {
+        std::process::Command::new("/bin/sh")
+            .arg(&hook)
+            .current_dir(&root)
+            .env("PATH", path)
+            .env("HOME", bench.root.join("nobody"))
+            .env("JIG_BENCH", &bench.root)
+            .output()
+            .unwrap()
+    };
+    let bin = Path::new(env!("CARGO_BIN_EXE_jig")).parent().unwrap();
+    let with_jig = format!("{}:/usr/bin:/bin", bin.display());
+
+    assert_eq!(
+        run(&with_jig).status.code(),
+        Some(0),
+        "a clean repository passes"
+    );
+    let unchecked = run("/usr/bin:/bin");
+    assert_eq!(
+        unchecked.status.code(),
+        Some(1),
+        "without jig the commit is refused"
+    );
+    assert!(String::from_utf8_lossy(&unchecked.stderr).contains("jig was not found"));
+
+    let readme = root.join("README.md");
+    fs::write(&readme, read(&readme) + "\nNow let's begin.\n").unwrap();
+    assert_eq!(
+        run(&with_jig).status.code(),
+        Some(1),
+        "an error refuses the commit"
+    );
+}
+
+#[test]
+fn setup_reports_hooks_that_are_managed_elsewhere() {
+    let bench = Bench::new();
+    let repo = bench.root.join("projects/old");
+    fs::create_dir_all(&repo).unwrap();
+    git(&repo, &["init", "-q"]);
+    git(&repo, &["config", "core.hooksPath", ".husky"]);
+    let output = bench
+        .jig(&bench.root)
+        .arg("adopt")
+        .arg(&repo)
+        .args([
+            "--kind", "exercise", "--code", "OLD", "--title", "Old kata", "--json",
+        ])
+        .output()
+        .unwrap();
+    let value = parse_json(&output.stdout, "adopt");
+    let notes = value["notes"].as_array().unwrap();
+    assert!(
+        notes
+            .iter()
+            .any(|note| note.as_str().unwrap().contains("core.hooksPath"))
+    );
+    assert!(!repo.join(".git/hooks/pre-commit").exists());
+}
+
+#[test]
+fn new_repositories_start_on_main() {
+    let dir = tempfile::tempdir().unwrap();
+    // A machine whose git still defaults to another branch name.
+    let jig = |args: &[&str]| {
+        Command::cargo_bin("jig")
+            .unwrap()
+            .env("JIG_BENCH", dir.path())
+            .env("GIT_CONFIG_COUNT", "1")
+            .env("GIT_CONFIG_KEY_0", "init.defaultBranch")
+            .env("GIT_CONFIG_VALUE_0", "trunk")
+            .current_dir(dir.path())
+            .args(args)
+            .assert()
+            .success();
+    };
+    jig(&["init"]);
+    jig(&[
+        "new",
+        "demo",
+        "--kind",
+        "software",
+        "--code",
+        "DM",
+        "--title",
+        "Demo tool",
+    ]);
+    for repo in ["vault", "projects/demo"] {
+        assert_eq!(
+            git(&dir.path().join(repo), &["symbolic-ref", "--short", "HEAD"]),
+            "main",
+            "{repo}"
+        );
+    }
 }
 
 #[test]
@@ -882,6 +1051,13 @@ fn init_installs_the_bench_guide_from_the_vault() {
     bench.jig(&bench.root).arg("init").assert().success();
     let installed = fs::read_to_string(bench.root.join("CLAUDE.md")).unwrap();
     assert!(installed.contains("vault/bench/CLAUDE.md") && installed.ends_with("# Bench guide\n"));
+    assert!(
+        fs::metadata(bench.root.join("CLAUDE.md"))
+            .unwrap()
+            .permissions()
+            .readonly(),
+        "the installed guide is read-only, so edits go to the vault copy"
+    );
 
     fs::write(&source, "# Bench guide, revised\n").unwrap();
     bench.jig(&bench.root).arg("init").assert().success();

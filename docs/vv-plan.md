@@ -47,11 +47,11 @@ Every automated test runs with `cargo test`. The PDF test renders only when Pand
 
 ### TC-002 Adoption leaves existing files unchanged
 
-- **Verifies:** REQ-002
+- **Verifies:** REQ-002, REQ-039
 - **Method:** Test
 - **Level:** System
 - **Procedure:** `cargo test --test cli adopting_an_existing_repository_keeps_its_files`
-- **Pass criteria:** The test passes: the existing README is byte-for-byte unchanged.
+- **Pass criteria:** The test passes: the existing README and `CLAUDE.md` are byte-for-byte unchanged, `.gitignore` gains only the build directory, and the existing `CLAUDE.md` becomes the agent instructions in the project's vault folder.
 
 ### TC-003 A dry run writes nothing
 
@@ -173,13 +173,13 @@ Every automated test runs with `cargo test`. The PDF test renders only when Pand
 - **Procedure:** `grep -rn "Command::new" src/`
 - **Pass criteria:** Every match runs `git`, `pandoc` or `typst`.
 
-### TC-018 Agent files are installed without overwriting
+### TC-018 Agent files are installed from the vault and stay untracked
 
 - **Verifies:** REQ-025, REQ-026, REQ-027
 - **Method:** Test
 - **Level:** System
-- **Procedure:** `cargo test --test cli setup_installs_agent_files_without_overwriting`
-- **Pass criteria:** The test passes: a new project has `CLAUDE.md`, local settings naming its vault folder once, and the settings file in `.gitignore`; `jig setup` keeps a hand-edited `CLAUDE.md` and existing settings.
+- **Procedure:** `cargo test --test cli agent_instructions_are_installed_from_the_vault`
+- **Pass criteria:** The test passes: a new project has its agent instructions in its vault folder and a read-only copy at its root; no tracked file names an agent file and git reports neither; `jig setup` installs an edited vault copy, restores a deleted copy, and adds the vault folder to the local settings once while keeping the other settings.
 
 ### TC-019 The bench guide is installed from the vault
 
@@ -187,7 +187,7 @@ Every automated test runs with `cargo test`. The PDF test renders only when Pand
 - **Method:** Test
 - **Level:** System
 - **Procedure:** `cargo test --test cli init_installs_the_bench_guide_from_the_vault`
-- **Pass criteria:** The test passes: `jig init` installs the vault's guide at the bench root and updates it when the vault copy changes.
+- **Pass criteria:** The test passes: `jig init` installs the vault's guide at the bench root, read-only, and updates it when the vault copy changes.
 
 ### TC-020 A gate takes its criteria from the profile
 
@@ -228,6 +228,30 @@ Every automated test runs with `cargo test`. The PDF test renders only when Pand
 - **Level:** System
 - **Procedure:** `cargo test --test cli adoption_reports_what_the_existing_files_fail`
 - **Pass criteria:** The test passes: the dry run and the adoption both report the two errors in the existing files, and the dry run writes nothing.
+
+### TC-025 Tracked agent files are errors
+
+- **Verifies:** REQ-038
+- **Method:** Test
+- **Level:** System
+- **Procedure:** `cargo test --test cli check_rejects_tracked_agent_files`
+- **Pass criteria:** The test passes: `jig check` reports no agent file in a new project, and reports the agent instructions and the local settings as errors once both are added to git.
+
+### TC-026 The hook refuses what fails or cannot be checked
+
+- **Verifies:** REQ-040, REQ-041
+- **Method:** Test
+- **Level:** System
+- **Procedure:** `cargo test --test cli -- the_hook_blocks_a_commit_that_fails_or_cannot_be_checked setup_reports_hooks_that_are_managed_elsewhere`
+- **Pass criteria:** Both tests pass: the installed hook exits 0 on a clean repository, 1 when jig is not on the PATH and 1 when `jig check` reports an error; in a repository with `core.hooksPath` set, no hook is installed and the result carries a note that names the setting.
+
+### TC-027 New repositories start on main
+
+- **Verifies:** REQ-042
+- **Method:** Test
+- **Level:** System
+- **Procedure:** `cargo test --test cli new_repositories_start_on_main`
+- **Pass criteria:** The test passes: with git configured for another default branch, the vault and a new project are both on `main`.
 
 ## 5. Validation
 

@@ -409,6 +409,7 @@ fn execute(
             .iter()
             .map(|line| format!("  skipped (already there): {line}")),
     );
+    text.extend(applied.notes.iter().map(|note| format!("  note: {note}")));
     Ok((serde_json::to_value(&applied)?, text))
 }
 

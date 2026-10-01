@@ -222,11 +222,11 @@ When `jig sync` is run, jig shall clone every registered project that is missing
 
 ### REQ-025 Agent instructions
 
-When a project is created or adopted, jig shall write a `CLAUDE.md` stating the process rules for agents, unless the file exists.
+When a project is created, adopted or set up, jig shall install the agent instructions kept in the project's vault folder as a read-only `CLAUDE.md` at the repository root, unless adoption finds a `CLAUDE.md` that jig did not install.
 
 - **Verification:** Test
 - **Priority:** Must
-- **Rationale:** An agent started in a project repository learns the rules before it changes anything.
+- **Rationale:** An agent started in a project repository learns the rules before it changes anything, and the instructions never enter the repository or its history.
 - **Source:** N-06
 
 ### REQ-026 Local agent access
@@ -238,13 +238,13 @@ When a project is created, adopted or set up, jig shall add the project's vault 
 - **Rationale:** Learning material is written to the vault folder without permission prompts, and personal settings survive.
 - **Source:** N-06
 
-### REQ-027 Untracked local settings
+### REQ-027 Untracked agent files
 
-When jig writes local agent settings, jig shall list the settings file in the repository's `.gitignore`.
+When jig installs agent instructions or writes local agent settings, jig shall list the file in the repository's local exclude file.
 
 - **Verification:** Test
 - **Priority:** Must
-- **Rationale:** The settings hold a private path that must never be committed.
+- **Rationale:** Neither file is ever committed, and no tracked file names them.
 - **Source:** N-03
 
 ### REQ-028 Bench guide
@@ -335,6 +335,51 @@ When `jig adopt` is run, jig shall report the errors that `jig check` finds in t
 - **Verification:** Test
 - **Priority:** Should
 - **Rationale:** The engineer sees what must change before the first commit, which the pre-commit hook would refuse.
+- **Source:** N-01
+
+### REQ-038 Tracked agent files
+
+If git tracks a project's agent instructions or local agent settings, then `jig check` shall report an error.
+
+- **Verification:** Test
+- **Priority:** Must
+- **Rationale:** The pre-commit hook then refuses the commit that would publish them.
+- **Source:** N-03
+
+### REQ-039 First agent instructions
+
+If a project's vault folder holds no agent instructions when the project is created, adopted or set up, then jig shall create them from the repository's `CLAUDE.md`, or from the template when the repository has none.
+
+- **Verification:** Test
+- **Priority:** Should
+- **Rationale:** Instructions a repository already has are kept, and move to the vault with their content.
+- **Source:** N-06
+
+### REQ-040 Pre-commit check
+
+When a project is created, adopted or set up, jig shall install a pre-commit hook that refuses a commit when `jig check` reports an error or jig cannot be run.
+
+- **Verification:** Test
+- **Priority:** Must
+- **Rationale:** The separation is enforced on every commit, and a check that cannot run must not pass.
+- **Source:** N-03
+
+### REQ-041 Hooks managed elsewhere
+
+If a repository's hooks are managed through `core.hooksPath` or by a pre-commit hook that jig did not install, then jig shall report that its hook was not installed.
+
+- **Verification:** Test
+- **Priority:** Should
+- **Rationale:** The engineer adds the check to the hook in use instead of believing it runs.
+- **Source:** N-03
+
+### REQ-042 Initial branch
+
+When jig creates a git repository, jig shall name its initial branch `main`.
+
+- **Verification:** Test
+- **Priority:** Should
+- **Rationale:** Every repository on the bench has the same default branch, whatever the machine's git configuration.
 - **Source:** N-01
 
 ## 4. Performance requirements

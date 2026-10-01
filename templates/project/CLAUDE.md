@@ -18,6 +18,7 @@
 - Gate entry criteria and gate decisions belong to the engineer: never tick a criterion or run `jig gate close` unasked.
 - `build/` holds generated PDFs and is never committed.
 - Commit, push or tag only when asked.
+- This file is installed by `jig setup` from the project's vault folder and is never committed. To change it, edit the copy in the vault folder (`jig vault path`), then run `jig setup`.
 
 ## Repository layout
 

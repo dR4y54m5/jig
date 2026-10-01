@@ -66,7 +66,7 @@ Every command accepts `--json` and then prints one JSON document. `jig new`, `ji
 
 ## Working with agents
 
-Every project jig creates or adopts gets a `CLAUDE.md` with the process rules an agent must follow, and untracked local settings that give agents access to the project's folder in the vault. `jig init` installs the bench-wide agent guide from `vault/bench/CLAUDE.md` at the bench root, where every session under the bench loads it. The `jig` skill in `skill/` holds the procedures: starting a project, writing documents and holding gate reviews.
+Every project jig creates or adopts gets agent instructions: a `CLAUDE.md` with the process rules an agent must follow. The master copy lives in the project's folder in the vault. `jig setup` installs a read-only copy at the repository root and lists it in the repository's local exclude file, so the instructions never enter the repository or its history; `jig check` reports an error if git tracks them. Local settings that give agents access to the project's vault folder are handled the same way. `jig init` installs the bench-wide agent guide from `vault/bench/CLAUDE.md` at the bench root, where every session under the bench loads it. The `jig` skill in `skill/` holds the procedures: starting a project, writing documents and holding gate reviews.
 
 ## Documentation
 

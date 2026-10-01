@@ -110,6 +110,14 @@ static HOME_PATH: LazyLock<Regex> = LazyLock::new(|| {
 static SCHEME: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^([A-Za-z][A-Za-z0-9+.-]*):").unwrap());
 
+/// Files that hold instructions or settings for an AI agent. They are local
+/// to a machine and must not be tracked.
+const AGENT_FILES: [&str; 3] = [
+    "CLAUDE.md",
+    "CLAUDE.local.md",
+    ".claude/settings.local.json",
+];
+
 /// Files larger than this are not searched for private references.
 const MAX_SCANNED_BYTES: usize = 4 * 1024 * 1024;
 
@@ -162,6 +170,7 @@ pub fn check(
         }
     }
     checker.private_references(&files);
+    checker.agent_files();
     checker.unique_ids(&docs);
     checker.requirements(&docs);
     checker.test_cases(&docs);
@@ -393,6 +402,34 @@ impl Checker<'_> {
                     });
                 }
             }
+        }
+    }
+
+    /// Agent instructions and local agent settings are installed on each
+    /// machine by `jig setup` and never committed: a tracked one is an error.
+    fn agent_files(&mut self) {
+        let Ok(output) = std::process::Command::new("git")
+            .arg("-C")
+            .arg(&self.project.root)
+            .args(["ls-files", "--cached", "--"])
+            .args(AGENT_FILES)
+            .output()
+        else {
+            return;
+        };
+        if !output.status.success() {
+            return;
+        }
+        for file in String::from_utf8_lossy(&output.stdout).lines() {
+            self.findings.push(Finding {
+                severity: Severity::Error,
+                rule: "separation.agent-file",
+                file: file.to_string(),
+                line: 1,
+                message: format!(
+                    "is tracked by git; agent files are installed by `jig setup` and never committed (`git rm --cached {file}`)"
+                ),
+            });
         }
     }
 

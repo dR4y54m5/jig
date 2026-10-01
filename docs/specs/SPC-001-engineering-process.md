@@ -69,7 +69,7 @@ Paths never encode a project's kind, language or year; those live in each projec
 
 | Path | Contents |
 |---|---|
-| `projects/<name>/` | Learning roadmap, `primers/`, `labs/`, `walkthroughs/`, `retros/` and `notes/` for one project |
+| `projects/<name>/` | Learning roadmap, `primers/`, `labs/`, `walkthroughs/`, `retros/` and `notes/` for one project, and the project's agent instructions |
 | `knowledge/` | Notes and lessons that span projects |
 | `bench/` | Guides for agents and the bench's own state; `bench/CLAUDE.md` is installed at the bench root by `jig init` |
 | `ideas/` | One file per idea not yet started as a project |
@@ -86,13 +86,15 @@ An agent learns the process from files, never from an earlier conversation: its 
 
 | Layer | Location | Loaded | Content | Maintained by |
 |---|---|---|---|---|
-| Bench guide | `<bench>/CLAUDE.md`, installed by `jig init` from `vault/bench/CLAUDE.md` | Every session under the bench | The engineer's conventions, the bench map, rules and antipatterns | The engineer, in the vault |
-| Project instructions | `<project>/CLAUDE.md`, drafted by `jig new` and `jig adopt` | Every session in the project | Project facts and the rules for changing the repository | The project, committed |
-| Local settings | `<project>/.claude/settings.local.json`, written by `jig setup` and never committed | Every session in the project | Access to the project's vault folder | jig |
+| Bench guide | `<bench>/CLAUDE.md`, installed read-only by `jig init` from `vault/bench/CLAUDE.md` | Every session under the bench | The engineer's conventions, the bench map, rules and antipatterns | The engineer, in the vault |
+| Project instructions | `<project>/CLAUDE.md`, installed read-only by `jig setup` from `CLAUDE.md` in the project's vault folder | Every session in the project | Project facts and the rules for changing the repository | The engineer, in the vault |
+| Local settings | `<project>/.claude/settings.local.json`, written by `jig setup` | Every session in the project | Access to the project's vault folder | jig |
 | Skill | `skill/SKILL.md` in the jig repository, linked into the agent's skills | When the task needs it | Procedures: starting a project, writing documents, gate reviews | jig |
 | Process rules | `jig explain` | On request | The rules jig enforces | jig's process data |
 
 A new machine gets every layer back from `jig init` and `jig sync`, which run `jig setup` for each cloned project.
+
+The project instructions and the local settings are never committed, whatever the project's visibility. `jig setup` lists both in the repository's local exclude file, which git reads and never commits, so that no tracked file names them; `jig check` reports an error if git tracks either. `jig new` and `jig adopt` seed the instructions in the vault from a template, or from a `CLAUDE.md` the adopted repository already has, which adoption leaves untouched. The installed copies of the bench guide and the project instructions are read-only: an edit is made to the vault copy and installed again.
 
 ## 5. Separation of engineering and learning material
 
@@ -119,7 +121,7 @@ References run one way. Vault documents cite project documents by ID, such as `E
 
 ### 5.4 Enforcement
 
-`jig check` enforces the rule in a project repository, and the pre-commit hook blocks a commit with errors. The check covers the files git tracks or would add: a file that git ignores is skipped, and so is any path listed under `exclude` in the `[check]` table of `project.toml`, which records the engineer's decision to leave third-party content out. Outside a git repository the check covers every file except hidden directories and build output.
+`jig check` enforces the rule in a project repository, and the pre-commit hook that `jig setup` installs blocks a commit with errors. The hook also refuses a commit when jig cannot be found, because a check that does not run protects nothing. It checks the working tree, not the staged content. Where a repository's hooks are managed through `core.hooksPath` or by a pre-commit hook jig did not install, `jig setup` installs nothing and says so; the check is then added to the hook in use. The check covers the files git tracks or would add: a file that git ignores is skipped, and so is any path listed under `exclude` in the `[check]` table of `project.toml`, which records the engineer's decision to leave third-party content out. Outside a git repository the check covers every file except hidden directories and build output.
 
 | Rule | Severity | Applies to | Detects |
 |---|---|---|---|
@@ -343,7 +345,7 @@ Every page shows the document ID and revision in its header, and the project and
 
 ## 14. Configuration management
 
-- Every project repository is a git repository. A gate baseline is tagged `gate/<gate>`, each fabricated hardware revision `hw/rev-<letter>`, and each firmware or software release `v<version>`.
+- Every project repository is a git repository whose initial branch is `main`. A gate baseline is tagged `gate/<gate>`, each fabricated hardware revision `hw/rev-<letter>`, and each firmware or software release `v<version>`.
 - After a baseline, a change to a released design is proposed in an engineering change order and recorded in the affected documents' revision histories.
 - Known defects of a hardware revision are recorded in its errata.
 - A release record lists every released artifact with its version and SHA-256 checksum.

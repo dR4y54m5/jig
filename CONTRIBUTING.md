@@ -80,7 +80,7 @@ The page design is `assets/bench.typ`; the Pandoc filter is `assets/bench.lua`; 
 
 ### 4.5 New-project files
 
-`templates/project/` holds what `jig new` and `jig adopt` write: the README, `CLAUDE.md` and the directory READMEs, with the placeholders `{{name}}`, `{{code}}`, `{{title}}` and `{{layout}}`. Existing projects keep their files; `CLAUDE.md` is created once and then belongs to the project.
+`templates/project/` holds what `jig new` and `jig adopt` write: the README, `CLAUDE.md` and the directory READMEs, with the placeholders `{{name}}`, `{{code}}`, `{{title}}` and `{{layout}}`. Existing projects keep their files. The `CLAUDE.md` template seeds the agent instructions in a project's vault folder, from which `jig setup` installs them; after that the vault copy belongs to the project.
 
 ### 4.6 The skill
 
