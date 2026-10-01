@@ -12,15 +12,7 @@ This plan defines how {{code}} is verified against its system requirements and v
 
 ## 4. Test cases
 
-<!-- guide: One heading per test case, "### TC-NNN Title", followed by the attribute list. "Verifies" lists requirement IDs, and jig builds the traceability matrix from it. The procedure is a TP document ID or an automated test command. -->
-
-### TC-001 Title
-
-- **Verifies:** REQ-001
-- **Method:** Test
-- **Level:** System
-- **Procedure:** 
-- **Pass criteria:** 
+<!-- guide: One heading per test case, "### TC-NNN Title", followed by the attribute list: Verifies, Method, Level, Procedure and Pass criteria. "Verifies" lists requirement IDs, and jig builds the traceability matrix from it. The procedure is a TP document ID or an automated test command. `jig explain requirements` prints an example. -->
 
 ## 5. Validation
 

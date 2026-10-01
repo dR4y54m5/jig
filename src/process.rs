@@ -77,7 +77,7 @@ impl Criterion {
         }
     }
 
-    fn min_tier(&self) -> Option<&str> {
+    pub fn min_tier(&self) -> Option<&str> {
         match self {
             Criterion::Text(_) => None,
             Criterion::Tiered { min_tier, .. } => Some(min_tier),
@@ -278,6 +278,55 @@ mod tests {
                         );
                     }
                 }
+            }
+        }
+    }
+
+    #[test]
+    fn profiles_only_name_checks_that_exist() {
+        for profile in &Process::get().profiles {
+            for phase in &profile.phases {
+                for check in &phase.checks {
+                    assert!(
+                        ["requirements-well-formed", "rtm-planned", "rtm-verified"]
+                            .contains(&check.as_str()),
+                        "{}: unknown check {check}",
+                        profile.kind
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn no_criterion_repeats_an_automated_check() {
+        for profile in &Process::get().profiles {
+            for phase in &profile.phases {
+                if phase.checks.iter().any(|c| c == "rtm-planned") {
+                    assert!(
+                        !phase
+                            .criteria
+                            .iter()
+                            .any(|c| c.text().contains("planned test case")),
+                        "{} {}: the check already covers planned test cases",
+                        profile.kind,
+                        phase.id
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn gates_and_kind_codes_do_not_collide() {
+        let process = Process::get();
+        for profile in &process.profiles {
+            for gate in profile.phases.iter().filter_map(|p| p.gate.as_deref()) {
+                assert!(
+                    process.kind(gate).is_none(),
+                    "{}: gate {gate} is also a document kind",
+                    profile.kind
+                );
             }
         }
     }

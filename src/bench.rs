@@ -129,8 +129,12 @@ impl Bench {
     }
 
     /// A path inside the bench, relative to its root, with forward slashes.
+    /// The root may be named through a symbolic link while `path` is resolved.
     pub fn relative(&self, path: &Path) -> String {
+        let resolved = self.root.canonicalize().ok();
         path.strip_prefix(&self.root)
+            .ok()
+            .or_else(|| path.strip_prefix(resolved.as_ref()?).ok())
             .unwrap_or(path)
             .to_string_lossy()
             .replace('\\', "/")

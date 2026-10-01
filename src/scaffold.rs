@@ -101,6 +101,23 @@ pub enum Action {
     },
 }
 
+impl Action {
+    /// Whether applying the action would change nothing, where that can be
+    /// told without applying it.
+    fn satisfied(&self) -> bool {
+        match self {
+            Action::CreateDir { path } => path.is_dir(),
+            Action::WriteFile {
+                path, overwrite, ..
+            } => path.exists() && !overwrite,
+            Action::AppendLine { path, line } => std::fs::read_to_string(path)
+                .is_ok_and(|text| text.lines().any(|l| l.trim() == line)),
+            Action::GitInit { path } => path.join(".git").exists(),
+            _ => false,
+        }
+    }
+}
+
 #[derive(Debug, Default, Serialize)]
 pub struct Plan {
     pub actions: Vec<Action>,
@@ -168,6 +185,22 @@ impl Plan {
                     bench.relative(repo),
                     bench.relative(dir)
                 ),
+            })
+            .collect()
+    }
+
+    /// The plan as a dry run shows it: each step, and whether it would change
+    /// anything.
+    pub fn preview(&self, bench: &Bench) -> Vec<String> {
+        self.actions
+            .iter()
+            .zip(self.describe(bench))
+            .map(|(action, text)| {
+                if action.satisfied() {
+                    format!("nothing to do: {text} (already there)")
+                } else {
+                    text
+                }
             })
             .collect()
     }
@@ -446,8 +479,8 @@ fn merge_agent_settings(repo: &Path, dir: &Path) -> Result<bool> {
 /// access to the project's vault folder, and the pre-commit hook. None of
 /// them is tracked by git, and no tracked file names them.
 fn agent_actions(plan: &mut Plan, bench: &Bench, root: &Path, meta: &ProjectMeta, replace: bool) {
-    let template =
-        templates::template("project/CLAUDE.md").expect("CLAUDE.md template is embedded");
+    let template = templates::template(kind_template("CLAUDE", &meta.kind))
+        .expect("CLAUDE.md template is embedded");
     if bench.vault_dir().is_dir() {
         plan.actions.push(Action::AgentInstructions {
             repo: root.to_path_buf(),
@@ -587,6 +620,17 @@ fn validate(setup: &Setup) -> Result<()> {
     Ok(())
 }
 
+/// The project template for a kind. An exercise has no documents and no
+/// gates, so its README and agent instructions say less.
+fn kind_template(name: &str, kind: &str) -> &'static str {
+    match (name, kind) {
+        ("README", "exercise") => "project/README-exercise.md",
+        ("README", _) => "project/README.md",
+        (_, "exercise") => "project/CLAUDE-exercise.md",
+        _ => "project/CLAUDE.md",
+    }
+}
+
 fn layout(kind: &str) -> &'static str {
     match kind {
         "product" => {
@@ -683,7 +727,8 @@ pub fn project_plan(
         plan.actions.push(Action::GitInit { path: root.clone() });
     }
     plan.file(root.join(PROJECT_FILE), project.to_toml()?);
-    let readme = templates::template("project/README.md").expect("README template is embedded");
+    let readme = templates::template(kind_template("README", &setup.kind))
+        .expect("README template is embedded");
     plan.file(
         root.join("README.md"),
         templates::fill(

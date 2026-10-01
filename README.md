@@ -56,6 +56,7 @@ jig doc pack                               # the gate review package as one PDF
 | `jig doc new`, `release`, `revise` | Create documents from templates and manage their revisions |
 | `jig doc pdf`, `jig doc pack` | Render one document, or a gate review package |
 | `jig gate check`, `open`, `close` | Gate readiness, the review record and the decision |
+| `jig phase next` | Move a project whose phase has no gate, such as an exercise, to its next phase |
 | `jig trace` | The requirements traceability matrix |
 | `jig explain` | The process rules: kinds, phases, gates, separation, requirements, IDs |
 | `jig vault new` | Learning documents in the private vault for the current project |

@@ -5,7 +5,7 @@ use anyhow::{Result, anyhow, bail};
 
 use crate::check::{TEACHING_PHRASES, TEACHING_WORDS, VAGUE_TERMS};
 use crate::docs::REVISION_LETTERS;
-use crate::process::{DocState, Naming, Process, Profile};
+use crate::process::{DocState, Naming, Phase, Process, Profile};
 use crate::trace::METHODS;
 
 pub const TOPICS: &str = "Topics:
@@ -125,35 +125,59 @@ fn profiles() -> String {
     out
 }
 
+/// With no tier given, everything is listed, and this marks what only
+/// applies from a tier up.
+fn tier_note(tier: Option<&str>, min_tier: Option<&str>) -> String {
+    match (tier, min_tier) {
+        (None, Some(min)) => format!(" ({min} tier and up)"),
+        _ => String::new(),
+    }
+}
+
 fn phases(profile: &Profile, tier: Option<&str>) -> String {
-    let tier_note = tier.map(|t| format!(", {t} tier")).unwrap_or_default();
-    let mut out = format!("Lifecycle of a {} project{tier_note}:\n\n", profile.kind);
-    for phase in profile.phases_for(tier) {
+    let scope = tier.map(|t| format!(", {t} tier")).unwrap_or_default();
+    let mut out = format!("{} lifecycle{scope}:\n\n", profile.title);
+    let listed: Vec<&Phase> = match tier {
+        Some(_) => profile.phases_for(tier),
+        None => profile.phases.iter().collect(),
+    };
+    for phase in listed {
+        let note = tier_note(tier, phase.min_tier.as_deref());
         match (&phase.gate, &phase.gate_title) {
             (Some(gate), Some(title)) => out.push_str(&format!(
-                "  {:<3} {:<38} gate {gate}: {title}\n      {}\n      Equivalent: {}\n",
+                "  {:<3} {:<38} gate {gate}: {title}{note}\n      {}\n      Equivalent: {}\n",
                 phase.id,
                 phase.name,
                 phase.question.as_deref().unwrap_or(""),
                 phase.equivalent.as_deref().unwrap_or("")
             )),
-            _ => out.push_str(&format!("  {:<3} {}\n", phase.id, phase.name)),
+            _ => out.push_str(&format!("  {:<3} {}{note}\n", phase.id, phase.name)),
         }
+    }
+    if profile.phases.iter().all(|phase| phase.gate.is_none()) {
+        out.push_str("\nNo phase has a gate; `jig phase next` moves the project on.\n");
     }
     out
 }
 
-fn gate_detail(profile: &Profile, phase: &crate::process::Phase, tier: Option<&str>) -> String {
+fn gate_detail(profile: &Profile, phase: &Phase, tier: Option<&str>) -> String {
+    let scope = tier.map(|t| format!(", {t} tier")).unwrap_or_default();
     let mut out = format!(
-        "{}: {} ({} project)\nCloses phase {}.\nQuestion:   {}\nEquivalent: {}\n\nRequired documents:\n",
+        "{}: {} ({}{scope})\nCloses phase {}{}.\nQuestion:   {}\nEquivalent: {}\n\nRequired documents:\n",
         phase.gate.as_deref().unwrap_or(""),
         phase.gate_title.as_deref().unwrap_or(""),
-        profile.kind,
+        profile.title,
         phase.label(),
+        tier_note(tier, phase.min_tier.as_deref()),
         phase.question.as_deref().unwrap_or(""),
         phase.equivalent.as_deref().unwrap_or("")
     );
-    for req in profile.requirements(phase, tier) {
+    let applies = |min_tier: Option<&str>| tier.is_none() || profile.applies(tier, min_tier);
+    for req in phase
+        .require
+        .iter()
+        .filter(|req| applies(req.min_tier.as_deref()))
+    {
         let title = Process::get()
             .kind(&req.kind)
             .map(|k| k.title.clone())
@@ -163,7 +187,12 @@ fn gate_detail(profile: &Profile, phase: &crate::process::Phase, tier: Option<&s
         } else {
             "exists"
         };
-        out.push_str(&format!("  {} ({}): {state}\n", title, req.kind));
+        out.push_str(&format!(
+            "  {} ({}): {state}{}\n",
+            title,
+            req.kind,
+            tier_note(tier, req.min_tier.as_deref())
+        ));
     }
     if !phase.checks.is_empty() {
         out.push_str(&format!(
@@ -172,8 +201,16 @@ fn gate_detail(profile: &Profile, phase: &crate::process::Phase, tier: Option<&s
         ));
     }
     out.push_str("\nEntry criteria (confirmed in the gate review record):\n");
-    for c in profile.criteria(phase, tier) {
-        out.push_str(&format!("  - {c}\n"));
+    for criterion in phase
+        .criteria
+        .iter()
+        .filter(|criterion| applies(criterion.min_tier()))
+    {
+        out.push_str(&format!(
+            "  - {}{}\n",
+            criterion.text(),
+            tier_note(tier, criterion.min_tier())
+        ));
     }
     out
 }

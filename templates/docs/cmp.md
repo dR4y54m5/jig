@@ -2,6 +2,8 @@
 
 ## 1. Purpose and scope
 
+<!-- guide: The product, the hardware revision and the markets this file covers. -->
+
 ## 2. Target markets
 
 ## 3. Applicable regulations and standards

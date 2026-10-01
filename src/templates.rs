@@ -48,6 +48,40 @@ mod tests {
     }
 
     #[test]
+    fn every_template_carries_guidance() {
+        for kind in &Process::get().kinds {
+            assert!(
+                doc_template(&kind.key).unwrap().contains("<!-- guide:"),
+                "{}: a template without guidance can be released untouched",
+                kind.key
+            );
+        }
+    }
+
+    #[test]
+    fn templates_open_and_close_as_the_process_specifies() {
+        for kind in &Process::get().kinds {
+            let template = doc_template(&kind.key).unwrap();
+            // Decision records follow MADR, a user guide opens for its reader,
+            // and a notebook is a dated log.
+            if !["adr", "usr", "log"].contains(&kind.key.as_str()) {
+                assert!(
+                    template.contains("\n## 1. Purpose and scope\n"),
+                    "{}: no purpose and scope",
+                    kind.key
+                );
+            }
+            if kind.key != "log" {
+                assert!(
+                    template.contains("Revision history\n\n| Rev | Date | Description | Author |"),
+                    "{}: no revision history",
+                    kind.key
+                );
+            }
+        }
+    }
+
+    #[test]
     fn fill_replaces_every_occurrence() {
         assert_eq!(
             fill("{{a}} and {{a}}, {{b}}", &[("a", "x"), ("b", "y")]),

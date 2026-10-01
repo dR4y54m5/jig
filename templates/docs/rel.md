@@ -1,17 +1,23 @@
 # {{title}}
 
-## 1. Release summary
+## 1. Purpose and scope
 
-## 2. Contents
+This record lists the contents of one release of {{code}}, so that the release can be identified and reproduced.
+
+## 2. Release summary
+
+<!-- guide: The release name and version, its date, the git tag it was built from and what it is for. -->
+
+## 3. Contents
 
 | Item | Version | File | SHA-256 |
 |---|---|---|---|
 
-## 3. Changes since the previous release
+## 4. Changes since the previous release
 
-## 4. Known issues
+## 5. Known issues
 
-## 5. Revision history
+## 6. Revision history
 
 | Rev | Date | Description | Author |
 |---|---|---|---|

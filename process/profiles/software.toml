@@ -76,7 +76,6 @@ checks = ["requirements-well-formed", "rtm-planned"]
 criteria = [
   "Every requirement is implemented.",
   "Automated tests run in continuous integration.",
-  "Every requirement has at least one planned test case.",
 ]
 
 [[phase]]

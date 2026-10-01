@@ -94,6 +94,11 @@ enum Command {
         #[command(subcommand)]
         command: GateCommand,
     },
+    /// Move a project whose phase has no gate to its next phase
+    Phase {
+        #[command(subcommand)]
+        command: PhaseCommand,
+    },
     /// Print the requirements traceability matrix
     Trace,
     /// Explain the process: kinds, phases, gates, the separation rule
@@ -211,6 +216,12 @@ enum GateCommand {
 }
 
 #[derive(Subcommand)]
+enum PhaseCommand {
+    /// Enter the next phase, or close the project after the last one
+    Next,
+}
+
+#[derive(Subcommand)]
 enum VaultCommand {
     /// Create a teaching document: primer, lab, walkthrough, retro or note
     New { kind: String, title: String },
@@ -312,6 +323,22 @@ fn run(cli: Cli) -> Result<ExitCode> {
         }
         Command::Doc { command } => doc_command(&bench, &cwd, command, json),
         Command::Gate { command } => gate_command(&bench, &cwd, command, json),
+        Command::Phase {
+            command: PhaseCommand::Next,
+        } => {
+            let mut project = Project::discover(&cwd)?;
+            let phase = gate::next_phase(&mut project)?;
+            let text = match &phase {
+                Some(phase) => format!("{} is now in {phase}", project.meta.name),
+                None => format!("{} is closed", project.meta.name),
+            };
+            report(
+                json,
+                serde_json::json!({ "phase": phase, "status": project.meta.status }),
+                &text,
+            )?;
+            Ok(ExitCode::SUCCESS)
+        }
         Command::Trace => {
             let project = Project::discover(&cwd)?;
             let matrix = Matrix::build(&docs::load_all(&project.root)?);
@@ -341,20 +368,16 @@ fn run(cli: Cli) -> Result<ExitCode> {
                     None
                 }
             });
-            if json {
-                let process = Process::get();
-                println!(
-                    "{}",
-                    serde_json::to_string_pretty(
-                        &serde_json::json!({ "kinds": process.kinds, "profiles": process.profiles })
-                    )?
-                );
-            } else {
-                println!(
-                    "{}",
-                    explain::explain(topic.as_deref(), profile, tier.as_deref())?
-                );
-            }
+            let text = explain::explain(topic.as_deref(), profile, tier.as_deref())?;
+            let value = match &topic {
+                // A topic gives its explanation; no topic gives the process data itself.
+                Some(topic) => serde_json::json!({ "topic": topic, "text": text }),
+                None => {
+                    let process = Process::get();
+                    serde_json::json!({ "kinds": process.kinds, "profiles": process.profiles })
+                }
+            };
+            report(json, value, &text)?;
             Ok(ExitCode::SUCCESS)
         }
         Command::Vault { command } => vault_command(&bench, &cwd, command, json),
@@ -389,7 +412,7 @@ fn execute(
     dry_run: bool,
 ) -> Result<(serde_json::Value, Vec<String>)> {
     if dry_run {
-        let lines = plan.describe(bench);
+        let lines = plan.preview(bench);
         let mut text = vec!["Would:".to_string()];
         text.extend(lines.iter().map(|line| format!("  {line}")));
         return Ok((

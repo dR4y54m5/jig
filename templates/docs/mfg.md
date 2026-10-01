@@ -2,6 +2,8 @@
 
 ## 1. Purpose and scope
 
+<!-- guide: The product revision this procedure builds, and who follows it. -->
+
 ## 2. Bill of materials and sourcing
 
 ## 3. Assembly

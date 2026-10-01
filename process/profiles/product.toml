@@ -88,7 +88,6 @@ criteria = [
   "The fabrication package is generated from the design source.",
   "The bring-up procedure is written.",
   "The enclosure design fits the board, battery and connectors.",
-  "Every requirement has at least one planned test case.",
 ]
 
 [[phase]]

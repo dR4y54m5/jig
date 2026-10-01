@@ -2,6 +2,8 @@
 
 ## 1. About this guide
 
+<!-- guide: Who the guide is for and which product revision it describes. A user guide addresses its reader directly. -->
+
 ## 2. In the box
 
 ## 3. Getting started

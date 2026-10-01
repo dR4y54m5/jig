@@ -15,11 +15,10 @@ This brief defines the problem {{code}} addresses, who it is for, what they need
 
 ## 4. Stakeholder needs
 
-<!-- guide: Each need states what a stakeholder must be able to do or have. Requirements in the SRS trace back to these IDs, and validation confirms each one. -->
+<!-- guide: Each need states what a stakeholder must be able to do or have, with the IDs N-01, N-02 and so on. Requirements in the SRS trace back to these IDs, and validation confirms each one. -->
 
 | ID | Need | Stakeholder | Priority |
 |---|---|---|---|
-| N-01 |  |  | Must |
 
 ## 5. Operational concept
 

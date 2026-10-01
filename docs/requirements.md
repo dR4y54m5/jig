@@ -409,6 +409,51 @@ If a test case or a requirement it verifies has changed since the basis stamp of
 - **Rationale:** A case that was not run says nothing about the requirement and must not hide an earlier result.
 - **Source:** N-04
 
+### REQ-046 Phases without gates
+
+When `jig phase next` is run in a phase that has no gate, jig shall move the project to its next phase, or mark the project closed after its last phase.
+
+- **Verification:** Test
+- **Priority:** Must
+- **Rationale:** A lifecycle without gates, such as an exercise, moves through its phases by a command and not by a hand edit.
+- **Source:** N-02
+
+### REQ-047 Phases with gates
+
+If `jig phase next` is run in a phase that has a gate, then jig shall refuse and name the gate.
+
+- **Verification:** Test
+- **Priority:** Must
+- **Rationale:** A gated phase is left only through its gate review.
+- **Source:** N-02
+
+### REQ-048 Process rules on request
+
+`jig explain` shall print the document kinds, lifecycles, gate requirements and writing rules from the data the other commands enforce.
+
+- **Verification:** Test
+- **Priority:** Must
+- **Rationale:** An AI pair asks the tool for a rule instead of recalling it, and gets the rule that is enforced.
+- **Source:** N-06
+
+### REQ-049 Template guidance blocks a release
+
+If a document contains template guidance, then `jig doc release` shall refuse to release it.
+
+- **Verification:** Test
+- **Priority:** Must
+- **Rationale:** A released document has every guided section written.
+- **Source:** N-05
+
+### REQ-050 Guidance in every template
+
+jig shall provide for every document kind a template that contains template guidance.
+
+- **Verification:** Test
+- **Priority:** Should
+- **Rationale:** A document left as its template can then never be released.
+- **Source:** N-05
+
 ## 4. Performance requirements
 
 ### REQ-022 Check time

@@ -20,16 +20,7 @@ Each requirement has one verification method: Inspection, Analysis, Demonstratio
 
 ## 3. Functional requirements
 
-<!-- guide: One heading per requirement, "### REQ-NNN Short title", followed by a one-sentence statement with exactly one "shall", then the attribute list. jig reads this structure to build the traceability matrix. -->
-
-### REQ-001 Short title
-
-The system shall respond.
-
-- **Verification:** Test
-- **Priority:** Must
-- **Rationale:** 
-- **Source:** N-01
+<!-- guide: One heading per requirement, "### REQ-NNN Short title", followed by a one-sentence statement with exactly one "shall", then the attribute list: Verification, Priority, Rationale and Source. `jig explain requirements` prints an example. jig reads this structure to build the traceability matrix. -->
 
 ## 4. Performance requirements
 

@@ -617,9 +617,26 @@ fn adopting_an_existing_repository_keeps_its_files() {
     assert!(installed.ends_with("# Existing rules\n"));
 }
 
+/// Every file under `dir` with its contents, to compare a directory before and after.
+fn snapshot(dir: &Path) -> Vec<(PathBuf, Vec<u8>)> {
+    let mut files: Vec<(PathBuf, Vec<u8>)> = walkdir::WalkDir::new(dir)
+        .into_iter()
+        .filter_map(|entry| entry.ok())
+        .filter(|entry| entry.file_type().is_file())
+        .map(|entry| (entry.path().to_path_buf(), fs::read(entry.path()).unwrap()))
+        .collect();
+    files.sort();
+    files
+}
+
 #[test]
 fn dry_run_creates_nothing() {
     let bench = Bench::new();
+    let repo = bench.root.join("projects/old");
+    fs::create_dir_all(&repo).unwrap();
+    fs::write(repo.join("README.md"), "# Old\n").unwrap();
+    let before = snapshot(&bench.root);
+
     bench
         .jig(&bench.root)
         .args(["new", "demo"])
@@ -627,7 +644,44 @@ fn dry_run_creates_nothing() {
         .arg("--dry-run")
         .assert()
         .success();
-    assert!(!bench.root.join("projects/demo").exists());
+    let output = bench
+        .jig(&bench.root)
+        .arg("adopt")
+        .arg(&repo)
+        .args([
+            "--kind",
+            "software",
+            "--code",
+            "OLD",
+            "--title",
+            "Old tool",
+            "--dry-run",
+            "--json",
+        ])
+        .output()
+        .unwrap();
+    for command in ["init", "sync"] {
+        bench
+            .jig(&bench.root)
+            .args([command, "--dry-run"])
+            .assert()
+            .success();
+    }
+    assert_eq!(snapshot(&bench.root), before, "a dry run writes nothing");
+
+    // The plan says which of its steps change nothing.
+    let plan = parse_json(&output.stdout, "adopt --dry-run");
+    let actions: Vec<&str> = plan["actions"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|action| action.as_str().unwrap())
+        .collect();
+    assert!(actions.contains(&"create projects/old/project.toml"));
+    assert!(
+        actions.contains(&"nothing to do: create projects/old/README.md (already there)"),
+        "{actions:?}"
+    );
 }
 
 #[test]
@@ -688,52 +742,37 @@ fn check_enforces_requirement_rules() {
         ],
     );
     let srs = root.join("docs/requirements.md");
-    let text = fs::read_to_string(&srs).unwrap().replace(
-        "The system shall respond.\n\n- **Verification:** Test\n",
-        "The system needs to respond quickly.\n\n",
-    ) + "\n### REQ-002 Start and stop\n\nThe system shall start and shall stop.\n\n- **Verification:** Test\n";
-    fs::write(&srs, text).unwrap();
+    fs::write(
+        &srs,
+        read(&srs)
+            + "\n### REQ-001 Respond\n\nThe system needs to respond quickly.\n\n- **Priority:** Must\n"
+            + "\n### REQ-002 Start and stop\n\nThe system shall start and shall stop.\n\n- **Verification:** Test\n",
+    )
+    .unwrap();
     let vvp = root.join("docs/vv-plan.md");
     fs::write(
         &vvp,
-        fs::read_to_string(&vvp).unwrap().replace(
-            "- **Verifies:** REQ-001",
-            "- **Verifies:** REQ-001, REQ-042",
-        ),
+        read(&vvp)
+            + "\n### TC-001 Respond\n\n- **Verifies:** REQ-001, REQ-042\n- **Method:** Test\n",
     )
     .unwrap();
 
-    let output = bench
-        .jig(&root)
-        .args(["check", "--json"])
-        .assert()
-        .code(1)
-        .get_output()
-        .stdout
-        .clone();
-    let findings: serde_json::Value = serde_json::from_slice(&output).unwrap();
-    let rules: Vec<&str> = findings
-        .as_array()
-        .unwrap()
-        .iter()
-        .map(|f| f["rule"].as_str().unwrap())
-        .collect();
-    for rule in [
-        "requirement.no-shall",
-        "requirement.verification",
-        "requirement.vague",
-        "test.unknown-requirement",
+    let findings = check_findings(&bench, &root);
+    for (rule, severity) in [
+        ("requirement.no-shall", "error"),
+        ("requirement.not-singular", "error"),
+        ("requirement.verification", "error"),
+        ("requirement.vague", "warning"),
+        ("test.unknown-requirement", "error"),
     ] {
-        assert!(rules.contains(&rule), "{rule} is reported");
+        assert!(
+            findings
+                .iter()
+                .any(|(_, found, level)| found == rule && level == severity),
+            "{rule} is reported as {severity}"
+        );
     }
-    assert!(
-        check_findings(&bench, &root).contains(&(
-            "docs/requirements.md".to_string(),
-            "requirement.not-singular".to_string(),
-            "error".to_string()
-        )),
-        "a statement with two `shall`s is an error"
-    );
+    bench.jig(&root).arg("check").assert().code(1);
 }
 
 #[test]
@@ -813,6 +852,128 @@ fn a_test_report_is_stamped_and_its_results_go_stale() {
                 && rule == "test.stale"
                 && severity == "warning")
     );
+}
+
+#[test]
+fn a_project_without_gates_moves_with_phase_next() {
+    let bench = Bench::new();
+    let root = bench.project(
+        "kata",
+        &[
+            "--kind",
+            "exercise",
+            "--code",
+            "KT",
+            "--title",
+            "Practice kata",
+        ],
+    );
+    // Nothing in a new exercise is for `jig check` to report, warnings included.
+    bench
+        .jig(&root)
+        .args(["check", "--strict"])
+        .assert()
+        .success();
+
+    for phase in ["P1", "P2"] {
+        bench.jig(&root).args(["phase", "next"]).assert().success();
+        assert!(in_phase(&root, phase));
+    }
+    bench.jig(&root).args(["phase", "next"]).assert().success();
+    assert!(read(&root.join("project.toml")).contains("status = \"closed\""));
+    bench.jig(&root).args(["phase", "next"]).assert().code(2);
+
+    // A phase with a gate moves only through its gate review.
+    let gated = bench.project("demo", &SOFTWARE);
+    let refused = bench
+        .jig(&gated)
+        .args(["phase", "next"])
+        .assert()
+        .code(2)
+        .get_output()
+        .stderr
+        .clone();
+    assert!(String::from_utf8_lossy(&refused).contains("jig gate close CR"));
+    assert!(in_phase(&gated, "P0"));
+}
+
+#[test]
+fn explain_prints_the_rules_the_other_commands_enforce() {
+    let bench = Bench::new();
+    let explain = |args: &[&str]| {
+        let output = bench
+            .jig(&bench.root)
+            .arg("explain")
+            .args(args)
+            .output()
+            .unwrap();
+        assert!(output.status.success(), "explain {args:?}");
+        String::from_utf8(output.stdout).unwrap()
+    };
+
+    assert!(explain(&["kinds"]).contains("System requirements specification"));
+    assert!(explain(&["requirements"]).contains("user-friendly"));
+    assert!(explain(&["TRR", "--kind", "software"]).contains("Every requirement is implemented."));
+    assert!(explain(&["phases", "--kind", "exercise"]).contains("Learning exercise lifecycle"));
+
+    // Without a tier, everything is shown and what depends on the tier is marked.
+    let every_tier = explain(&["phases", "--kind", "product"]);
+    assert!(every_tier.contains("P6") && every_tier.contains("batch tier and up"));
+    assert!(!explain(&["phases", "--kind", "product", "--tier", "desk"]).contains("P6"));
+    let pdr = explain(&["PDR", "--kind", "product"]);
+    assert!(pdr.contains("Interface control document") && pdr.contains("batch tier and up"));
+    assert!(
+        !explain(&["PDR", "--kind", "product", "--tier", "desk"]).contains("Interface control")
+    );
+
+    // With --json, a topic gives that topic.
+    let topic = parse_json(
+        explain(&["separation", "--json"]).as_bytes(),
+        "explain separation",
+    );
+    assert_eq!(topic["topic"], "separation");
+    assert!(topic["text"].as_str().unwrap().contains("teaching phrases"));
+}
+
+#[test]
+fn templates_hold_guidance_and_no_sample_content() {
+    let bench = Bench::new();
+    let root = bench.project(
+        "demo",
+        &[
+            "--kind",
+            "software",
+            "--code",
+            "DM",
+            "--title",
+            "Demo tool",
+            "--phase",
+            "P1",
+        ],
+    );
+    let output = bench
+        .jig(&root)
+        .args(["status", "--json"])
+        .output()
+        .unwrap();
+    let status = parse_json(&output.stdout, "status");
+    assert_eq!(status["requirements"], 0, "an unwritten SRS states nothing");
+    assert_eq!(
+        status["open_risks"], 0,
+        "an unwritten register holds no risk"
+    );
+
+    // A kind whose template once had no guidance cannot be released untouched.
+    bench
+        .jig(&root)
+        .args(["doc", "new", "spc", "--title", "File format"])
+        .assert()
+        .success();
+    bench
+        .jig(&root)
+        .args(["doc", "release", "DM-SPC-001", "--note", "Too early"])
+        .assert()
+        .code(2);
 }
 
 fn tools_available() -> bool {
@@ -941,6 +1102,28 @@ fn every_command_prints_json() {
         run(&root, args);
     }
     run(&bench.root, &["sync"]);
+    run(&root, &["explain", "ids"]);
+    strip_guidance(&root.join("docs/reviews/GR-CR.md"));
+    run(
+        &root,
+        &["gate", "close", "CR", "--outcome", "kill", "--note", "Demo"],
+    );
+    let other = bench.root.join("projects/other");
+    fs::create_dir_all(&other).unwrap();
+    run(
+        &bench.root,
+        &[
+            "adopt",
+            "projects/other",
+            "--kind",
+            "exercise",
+            "--code",
+            "OT",
+            "--title",
+            "Other",
+        ],
+    );
+    run(&other, &["phase", "next"]);
     if tools_available() {
         run(&root, &["doc", "pdf", "CON"]);
         run(&root, &["doc", "pack", "CR"]);

@@ -9,7 +9,7 @@ use crate::process::{Phase, Process, Profile};
 
 pub const PROJECT_FILE: &str = "project.toml";
 
-const HEADER: &str = "# Managed by jig. Change `phase` with `jig gate close`, not by hand.\n# The paths under `[check] exclude` are skipped by `jig check`; edit that list by hand.\n\n";
+const HEADER: &str = "# Managed by jig. Change `phase` with `jig gate close` or `jig phase next`, not by hand.\n# The paths under `[check] exclude` are skipped by `jig check`; edit that list by hand.\n\n";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProjectFile {

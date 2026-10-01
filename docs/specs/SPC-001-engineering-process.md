@@ -184,7 +184,7 @@ Text in code blocks, code spans and HTML comments is exempt from the teaching an
 
 ### 7.4 Learning exercise
 
-Goal, Work and Retro, with no gates. The repository holds code and a README; goals, notes and the retrospective live in the vault.
+Goal, Work and Retro, with no gates. The repository holds code and a README; goals, notes and the retrospective live in the vault. `jig phase next` moves an exercise to its next phase and closes it after the last. A phase that has a gate is left only through its gate review.
 
 ### 7.5 Verification and validation pairing
 
@@ -236,7 +236,7 @@ R means released, E means the document exists in any status.
 | PRR | MFG R, USR R, REL R; retail: CMP R | None |
 | CLOSE | None | None |
 
-Every gate also requires `jig check` to report no errors. `jig explain <GATE> --kind <KIND>` lists the documents and criteria for any profile.
+Every gate also requires `jig check` to report no errors. `jig explain <GATE> --kind <KIND>` lists the documents and criteria for any profile; without `--tier` it lists those of every tier and marks what a tier adds.
 
 ## 9. Document set
 
@@ -302,7 +302,9 @@ Revisions are letters per ASME Y14.35: A to Y without I, O, Q, S, X and Z, then 
 
 ### 10.4 Structure
 
-Every document except a decision record opens with a Purpose and scope section and ends with a Revision history table. Decision records follow MADR. Section numbers are written in the headings, so references are the same on GitHub and in PDF. Templates carry `<!-- guide: -->` comments, which must be replaced with content before a release.
+Every document opens with a Purpose and scope section and ends with a Revision history table, with three exceptions: a decision record follows MADR, a user guide opens with a section about the guide itself, and an engineering notebook is a dated log with neither. Section numbers are written in the headings, so references are the same on GitHub and in PDF.
+
+The template of every kind carries `<!-- guide: -->` comments, which must be replaced with content before a release; `jig doc release` and `jig gate close` refuse a document that still holds one. A template contains no sample requirement, test case or risk, so an unwritten document states nothing.
 
 ## 11. Writing rules
 

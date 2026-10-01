@@ -64,7 +64,7 @@ Record significant design choices as decision records (`jig doc new adr`).
 4. Add it to `PACK_ORDER` in `src/render.rs`. If it is evidence at any gate once it exists, add it to the list in `pack_kinds` too.
 5. Add it to the kinds table in JIG-SPC-001 section 9.1.
 
-The unit tests reject a kind without a template and a profile that references an unknown kind.
+The unit tests reject a kind without a template, a template without guidance or without the sections the process specifies, and a profile that references an unknown kind or check.
 
 ### 4.2 A lifecycle
 
@@ -80,7 +80,7 @@ The page design is `assets/bench.typ`; the Pandoc filter is `assets/bench.lua`; 
 
 ### 4.5 New-project files
 
-`templates/project/` holds what `jig new` and `jig adopt` write: the README, `CLAUDE.md` and the directory READMEs, with the placeholders `{{name}}`, `{{code}}`, `{{title}}` and `{{layout}}`. Existing projects keep their files. The `CLAUDE.md` template seeds the agent instructions in a project's vault folder, from which `jig setup` installs them; after that the vault copy belongs to the project.
+`templates/project/` holds what `jig new` and `jig adopt` write: the README, `CLAUDE.md` and the directory READMEs, with the placeholders `{{name}}`, `{{code}}`, `{{title}}` and `{{layout}}`. An exercise has its own, shorter README and `CLAUDE.md`. Existing projects keep their files. The `CLAUDE.md` template seeds the agent instructions in a project's vault folder, from which `jig setup` installs them; after that the vault copy belongs to the project.
 
 ### 4.6 The skill
 

@@ -30,7 +30,7 @@ To bring an existing repository under the process, use `jig adopt <path>` with `
 
 - `jig explain <kind>` gives each kind's purpose, basis and location. Follow the template's numbered sections.
 - Requirements (`jig explain requirements`): a `### REQ-NNN Title` heading, one sentence in an EARS pattern with exactly one `shall`, then Verification (Inspection, Analysis, Demonstration or Test), Priority, Rationale and Source (a need ID). No vague terms. Quantify.
-- Test cases go in the V&V plan as `### TC-NNN Title` with Verifies, Method, Level, Procedure and Pass criteria. Results go in test reports under the same heading with Result and Evidence. `jig trace` builds the matrix.
+- Test cases go in the V&V plan as `### TC-NNN Title` with Verifies, Method, Level, Procedure and Pass criteria. Results go in test reports under the same heading with Result and Evidence. `jig doc new tr` lists every test case with a Basis stamp: keep each stamp, and remove or leave as Not run the cases the report does not cover. `jig trace` builds the matrix and reports a requirement as stale when it or its test case changed after the run.
 - Decision records follow MADR: context, drivers, options, outcome, consequences. Supersede, never rewrite.
 - Diagrams are Mermaid (flowchart, sequence, state, Gantt) or WaveDrom. Draw block diagrams as flowcharts with subgraphs, never block-beta. Keep state diagrams to about five transitions.
 - Style: impersonal, present tense, measurable. No second person except in user guides. Procedures use numbered imperative steps.
@@ -40,7 +40,7 @@ To bring an existing repository under the process, use `jig adopt <path>` with `
 
 1. `jig gate check` and summarize what stands between the project and its gate.
 2. Close the gaps the user wants closed: write documents, then release them.
-3. `jig gate open`, then write the record's summary and open actions.
+3. `jig gate open`, then write the record's summary and open actions. No decision can be recorded while the record still holds template guidance.
 4. Ask the user to confirm each entry criterion (multi-select question). Tick only what the user confirms.
 5. `jig doc pack` and give the user the PDF path. For a quick visual check, render pages with `-o '<dir>/page-{p}.png'`.
 6. When the user decides, `jig gate close <GATE> --outcome go|go-with-actions|iterate|kill --note "<reason>"`. Then offer to commit and tag `gate/<gate>`.
@@ -58,6 +58,7 @@ To bring an existing repository under the process, use `jig adopt <path>` with `
 | `jig doc list`, `new`, `release`, `revise` | Documents and revisions |
 | `jig doc pdf <ID>`, `jig doc pack [GATE]` | PDF output in `build/pdf/` |
 | `jig gate check`, `open`, `close` | Gate reviews |
+| `jig phase next` | Next phase of a project without gates, such as an exercise |
 | `jig trace` | Requirements traceability matrix |
 | `jig explain [kinds, <kind>, phases, <GATE>, separation, requirements, ids]` | The rules |
 | `jig vault new`, `jig vault path` | Learning material |

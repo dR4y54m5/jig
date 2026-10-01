@@ -686,6 +686,34 @@ pub fn close(
     Ok(closed)
 }
 
+/// Moves a project out of a phase that has no gate: to its next phase, or to
+/// closed after the last one. Returns the new phase. A phase with a gate
+/// moves only through its gate review.
+pub fn next_phase(project: &mut Project) -> Result<Option<String>> {
+    if project.meta.status != "active" {
+        bail!("{} is {}", project.meta.name, project.meta.status);
+    }
+    let phase = project.phase();
+    if let Some(gate) = &phase.gate {
+        bail!(
+            "phase {} closes with its gate review; run `jig gate close {gate}`",
+            phase.label()
+        );
+    }
+    match project.profile().next_phase(&phase.id, project.tier()) {
+        Some(next) => {
+            project.meta.phase = next.id.clone();
+            project.save()?;
+            Ok(Some(next.label()))
+        }
+        None => {
+            project.meta.status = "closed".into();
+            project.save()?;
+            Ok(None)
+        }
+    }
+}
+
 /// Drafts the single-instance documents a phase requires that do not exist yet.
 pub fn draft_phase_documents(
     project: &Project,

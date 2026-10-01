@@ -59,7 +59,7 @@ Every automated test runs with `cargo test`. The PDF test renders only when Pand
 - **Method:** Test
 - **Level:** System
 - **Procedure:** `cargo test --test cli dry_run_creates_nothing`
-- **Pass criteria:** The test passes: the project directory does not exist afterwards.
+- **Pass criteria:** The test passes: dry runs of `new`, `adopt`, `init` and `sync` leave every file on the bench unchanged, and the plan marks the steps that would change nothing.
 
 ### TC-004 Document control is enforced
 
@@ -260,6 +260,30 @@ Every automated test runs with `cargo test`. The PDF test renders only when Pand
 - **Level:** System
 - **Procedure:** `cargo test --bin jig trace::` and `cargo test --test cli a_test_report_is_stamped_and_its_results_go_stale`
 - **Pass criteria:** The tests pass: a new report lists every test case as not run with a stamp; a recorded pass is verified; rewording the requirement or retargeting the test case makes the result stale, and rewrapping the text or changing another requirement does not; a stale result is a warning in `jig check`; a later result of Not run does not replace an earlier result.
+
+### TC-029 Phases without gates move by command
+
+- **Verifies:** REQ-046, REQ-047
+- **Method:** Test
+- **Level:** System
+- **Procedure:** `cargo test --test cli a_project_without_gates_moves_with_phase_next`
+- **Pass criteria:** The test passes: a new exercise passes `jig check --strict`; `jig phase next` takes it through its three phases and then closes it; in a phase with a gate the command is refused, names the gate and leaves the phase unchanged.
+
+### TC-030 Explain prints the rules that are enforced
+
+- **Verifies:** REQ-048
+- **Method:** Test
+- **Level:** System
+- **Procedure:** `cargo test --test cli explain_prints_the_rules_the_other_commands_enforce`
+- **Pass criteria:** The test passes: the kinds, the requirement rules and a gate's criteria are printed; a product lifecycle asked for without a tier lists every phase and document and marks what a tier adds, and with a tier lists only what applies; with `--json`, a topic returns that topic's text.
+
+### TC-031 Templates hold guidance and no content
+
+- **Verifies:** REQ-049, REQ-050
+- **Method:** Test
+- **Level:** System
+- **Procedure:** `cargo test --test cli -- release_is_refused_while_template_guidance_remains templates_hold_guidance_and_no_sample_content` and `cargo test --bin jig templates::`
+- **Pass criteria:** The tests pass: a draft that still holds guidance is not released; a new project reports no requirement and no open risk; every template contains guidance, and opens and closes as the process specifies.
 
 ## 5. Validation
 

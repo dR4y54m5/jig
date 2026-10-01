@@ -1,23 +1,29 @@
 # {{title}}
 
-## 1. Change summary
+## 1. Purpose and scope
 
-## 2. Reason for change
+This order proposes one change to a baselined design of {{code}} and records its disposition.
 
-## 3. Affected items
+## 2. Change summary
+
+<!-- guide: What changes, in two or three sentences, and the documents or design files it applies to. -->
+
+## 3. Reason for change
+
+## 4. Affected items
 
 | Item | Current | Proposed |
 |---|---|---|
 
-## 4. Impact
+## 5. Impact
 
 <!-- guide: The effect on requirements, interfaces, cost, schedule and verification already done. -->
 
-## 5. Disposition
+## 6. Disposition
 
 **Disposition:** Pending
 
-## 6. Revision history
+## 7. Revision history
 
 | Rev | Date | Description | Author |
 |---|---|---|---|
