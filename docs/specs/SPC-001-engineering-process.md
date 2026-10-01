@@ -2,9 +2,9 @@
 id: JIG-SPC-001
 title: Engineering process
 kind: spc
-revision: D
-status: released
-date: 2026-09-30
+revision: E
+status: draft
+date: 2026-10-01
 author: dR4y54m5
 gate: TRR
 ---
@@ -199,13 +199,15 @@ Every defining document is closed by evidence later in the lifecycle.
 ### 8.1 Procedure
 
 1. `jig gate check` shows the gate's required documents, automated checks and entry criteria.
-2. `jig gate open` creates the gate review record with the entry criteria as a checklist, the automated checks and the evidence list.
-3. The engineer confirms each entry criterion, and writes the summary and any open actions.
+2. `jig gate open` creates the gate review record with the entry criteria as a checklist, the automated checks and the evidence list. Run again, it refreshes the generated sections and restores any criterion missing from the checklist.
+3. The summary and the open actions are written, usually by the AI pair. The engineer confirms each entry criterion by ticking it.
 4. `jig doc pack` renders the gate package for a reviewer.
 5. `jig gate close <GATE> --outcome <OUTCOME>` records the decision, releases the review record and, on a go, moves the project to its next phase and drafts that phase's documents.
 6. The baseline is committed and tagged `gate/<gate>`.
 
-A go is refused while any automated check fails or any criterion is unconfirmed, unless `--force` records it anyway.
+The entry criteria come from the profile. A criterion that is missing from the record counts as unconfirmed, so a checklist cannot be shortened to pass a gate. A line added to the checklist is a criterion too.
+
+A go is refused while any automated check fails or any criterion is unconfirmed, unless `--force` records it anyway; the record then states that the go was forced and what it overrode. No decision is recorded while the record contains template guidance, or once the record is released. A refused decision changes neither the record nor the project.
 
 ### 8.2 Outcomes
 
@@ -213,7 +215,7 @@ A go is refused while any automated check fails or any criterion is unconfirmed,
 |---|---|
 | Go | The phase is complete; the project moves to the next phase |
 | Go with actions | As go, with open actions recorded in the review record |
-| Iterate | The phase continues; the review is repeated in a new revision of the record |
+| Iterate | The phase continues; `jig gate open` starts the next review in a new revision of the record, with the outcome pending and every criterion unconfirmed |
 | Kill | The project stops; its status becomes killed |
 
 ### 8.3 Required documents, hardware product

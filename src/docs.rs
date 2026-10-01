@@ -36,6 +36,11 @@ impl Doc {
     pub fn load(root: &Path, path: &Path) -> Result<Doc> {
         let text =
             std::fs::read_to_string(path).with_context(|| format!("reading {}", path.display()))?;
+        Ok(Doc::parse(root, path, text))
+    }
+
+    /// A document from text that is not, or not yet, on disk at `path`.
+    pub fn parse(root: &Path, path: &Path, text: String) -> Doc {
         let rel = path
             .strip_prefix(root)
             .unwrap_or(path)
@@ -48,7 +53,7 @@ impl Doc {
             }
             Err(err) => (None, Some(err), 0, 1),
         };
-        Ok(Doc {
+        Doc {
             path: path.to_path_buf(),
             rel,
             text,
@@ -56,7 +61,12 @@ impl Doc {
             front_error,
             body_start,
             body_line,
-        })
+        }
+    }
+
+    /// The front matter as written in the file, ending with its closing line.
+    pub fn front_text(&self) -> &str {
+        &self.text[..self.body_start]
     }
 
     pub fn body(&self) -> &str {

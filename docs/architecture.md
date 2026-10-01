@@ -2,9 +2,9 @@
 id: JIG-ARC
 title: Architecture description
 kind: arc
-revision: B
-status: released
-date: 2026-09-30
+revision: C
+status: draft
+date: 2026-10-01
 author: dR4y54m5
 gate: DR
 ---

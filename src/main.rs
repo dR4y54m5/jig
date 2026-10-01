@@ -497,19 +497,12 @@ fn doc_command(bench: &Bench, cwd: &Path, command: DocCommand, json: bool) -> Re
         }
         DocCommand::Release { id, note } => {
             let doc = find_doc(&project, &all, &id)?;
-            let errors: Vec<Finding> = run_check(bench, &project)?
-                .into_iter()
-                .filter(|f| f.file == doc.rel && f.severity == Severity::Error)
-                .collect();
-            let guides = markdown::guide_comments(doc.body(), doc.body_line);
-            if !errors.is_empty() || !guides.is_empty() {
-                if !json {
-                    print_findings(&errors, false, false)?;
-                }
+            let blockers = check::release_blockers(doc, &run_check(bench, &project)?);
+            if !blockers.is_empty() {
                 bail!(
-                    "{} cannot be released: {} errors, template guidance on lines {guides:?}",
+                    "{} cannot be released:\n  {}",
                     doc.id().unwrap_or(&doc.rel),
-                    errors.len()
+                    blockers.join("\n  ")
                 );
             }
             std::fs::write(&doc.path, docs::release(doc, &note, &date, &author)?)?;
@@ -644,8 +637,9 @@ fn gate_command(bench: &Bench, cwd: &Path, command: GateCommand, json: bool) -> 
             )?;
             let gate_id = phase.gate.clone().unwrap_or_default();
             let mut lines = vec![format!(
-                "{gate_id}: {} recorded in {}",
+                "{gate_id}: {}{} recorded in {}",
                 closed.outcome.label(),
+                if closed.forced { ", forced," } else { "" },
                 closed.record
             )];
             if let Some(next) = &closed.new_phase {
@@ -663,6 +657,7 @@ fn gate_command(bench: &Bench, cwd: &Path, command: GateCommand, json: bool) -> 
                 serde_json::json!({
                     "gate": gate_id,
                     "outcome": closed.outcome.label(),
+                    "forced": closed.forced,
                     "record": closed.record,
                     "phase": closed.new_phase,
                     "drafted": closed.created,
@@ -693,7 +688,16 @@ fn print_readiness(r: &gate::Readiness) {
     };
     println!("\nEntry criteria{note}:");
     for c in &r.criteria {
-        println!("  [{}] {}", if c.checked { "x" } else { " " }, c.text);
+        println!(
+            "  [{}] {}{}",
+            if c.checked { "x" } else { " " },
+            c.text,
+            if c.missing {
+                " (missing from the review record; `jig gate open` restores it)"
+            } else {
+                ""
+            }
+        );
     }
     let passed = r.checks.iter().filter(|c| c.ok).count();
     let confirmed = r.criteria.iter().filter(|c| c.checked).count();

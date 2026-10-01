@@ -2,9 +2,9 @@
 id: JIG-SRS
 title: System requirements specification
 kind: srs
-revision: B
-status: released
-date: 2026-09-30
+revision: C
+status: draft
+date: 2026-10-01
 author: dR4y54m5
 gate: SRR
 ---
@@ -255,6 +255,60 @@ When `jig init` runs and the vault holds `bench/CLAUDE.md`, jig shall install it
 - **Priority:** Should
 - **Rationale:** Every session under the bench loads the guide, and the vault keeps it versioned.
 - **Source:** N-07
+
+### REQ-029 Criteria from the profile
+
+If an entry criterion of the gate's profile is missing from the review record, then jig shall treat the criterion as unconfirmed.
+
+- **Verification:** Test
+- **Priority:** Must
+- **Rationale:** A gate cannot be passed by deleting a criterion from its record.
+- **Source:** N-02
+
+### REQ-030 Unfinished review record
+
+If a gate decision is requested while the review record contains template guidance, then jig shall refuse the decision.
+
+- **Verification:** Test
+- **Priority:** Must
+- **Rationale:** A released record that still holds guidance fails `jig check`, which blocks the commit of the decision.
+- **Source:** N-02
+
+### REQ-031 Decided review record
+
+If a gate decision is requested while the review record is released, then jig shall refuse the decision.
+
+- **Verification:** Test
+- **Priority:** Must
+- **Rationale:** A decision is recorded once; another review starts with `jig gate open`.
+- **Source:** N-02
+
+### REQ-032 Refused decisions
+
+If jig refuses a gate decision, then jig shall leave the review record and `project.toml` unchanged.
+
+- **Verification:** Test
+- **Priority:** Must
+- **Rationale:** A released record is never edited in place, and a refusal has no side effects.
+- **Source:** N-02
+
+### REQ-033 Confirmations cleared on reopening
+
+When `jig gate open` reopens a released review record, jig shall clear every entry-criterion confirmation in the new revision.
+
+- **Verification:** Test
+- **Priority:** Should
+- **Rationale:** Each review confirms its criteria afresh.
+- **Source:** N-02
+
+### REQ-034 Forced decisions
+
+When a go is recorded with `--force` while a check fails or an entry criterion is unconfirmed, jig shall state in the review record that the decision was forced.
+
+- **Verification:** Test
+- **Priority:** Must
+- **Rationale:** A reader of the record sees that the gate was passed against its criteria.
+- **Source:** N-02
 
 ## 4. Performance requirements
 

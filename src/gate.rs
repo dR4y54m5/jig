@@ -7,7 +7,7 @@ use anyhow::{Result, anyhow, bail};
 use regex::Regex;
 use serde::Serialize;
 
-use crate::check::{Finding, Severity};
+use crate::check::{self, Finding, Severity};
 use crate::docs::{self, Doc, DocRequest};
 use crate::markdown;
 use crate::process::{DocState, Naming, Phase, Process};
@@ -29,6 +29,8 @@ pub struct CheckItem {
 pub struct CriterionState {
     pub text: String,
     pub checked: bool,
+    /// Required by the profile but absent from the review record.
+    pub missing: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -49,6 +51,43 @@ impl Readiness {
 
     pub fn ready(&self) -> bool {
         self.checks_pass() && self.criteria.iter().all(|c| c.checked)
+    }
+
+    /// What stands between the gate and a go, one line per failed check and
+    /// unconfirmed criterion.
+    pub fn shortfalls(&self) -> Vec<String> {
+        self.checks
+            .iter()
+            .filter(|c| !c.ok)
+            .map(|c| format!("check failed: {} ({})", c.name, c.detail))
+            .chain(self.criteria.iter().filter(|c| !c.checked).map(|c| {
+                if c.missing {
+                    format!("criterion missing from the review record: {}", c.text)
+                } else {
+                    format!("criterion unconfirmed: {}", c.text)
+                }
+            }))
+            .collect()
+    }
+
+    /// The shortfalls as a phrase, e.g. "1 failed check and 2 unconfirmed criteria".
+    fn shortfall_summary(&self) -> String {
+        let failed = self.checks.iter().filter(|c| !c.ok).count();
+        let open = self.criteria.iter().filter(|c| !c.checked).count();
+        let mut parts = Vec::new();
+        if failed > 0 {
+            parts.push(format!(
+                "{failed} failed check{}",
+                if failed == 1 { "" } else { "s" }
+            ));
+        }
+        if open > 0 {
+            parts.push(format!(
+                "{open} unconfirmed criteri{}",
+                if open == 1 { "on" } else { "a" }
+            ));
+        }
+        parts.join(" and ")
     }
 }
 
@@ -227,17 +266,10 @@ pub fn readiness(
     });
 
     let record_doc = record(docs, &gate);
-    let criteria = match record_doc {
-        Some(doc) => criteria_in(doc),
-        None => profile
-            .criteria(phase, tier)
-            .into_iter()
-            .map(|t| CriterionState {
-                text: t.to_string(),
-                checked: false,
-            })
-            .collect(),
-    };
+    let criteria = criteria_state(
+        &profile.criteria(phase, tier),
+        &record_doc.map(|doc| checklist(doc.body())),
+    );
 
     Readiness {
         gate,
@@ -250,32 +282,150 @@ pub fn readiness(
     }
 }
 
-/// The checklist under a record's "Entry criteria" heading.
-fn criteria_in(doc: &Doc) -> Vec<CriterionState> {
-    let body = doc.body();
+/// The body lines under a record's "Entry criteria" heading, as a half-open
+/// range of 0-based line indices: from the line after the heading to the next
+/// heading of the same or a higher level.
+fn criteria_section(body: &str) -> Option<(usize, usize)> {
     let headings = markdown::headings(body, 1);
-    let Some(start) = headings
+    let at = headings
         .iter()
-        .position(|h| markdown::section_name(&h.text) == "entry criteria")
-    else {
-        return Vec::new();
-    };
-    let from = headings[start].line;
-    let level = headings[start].level;
-    let to = headings[start + 1..]
+        .position(|h| markdown::section_name(&h.text) == "entry criteria")?;
+    let level = headings[at].level;
+    let end = headings[at + 1..]
         .iter()
         .find(|h| h.level <= level)
         .map(|h| h.line - 1)
         .unwrap_or(usize::MAX);
+    // A heading's 1-based line number is the 0-based index of the line after it.
+    Some((headings[at].line, end))
+}
+
+/// The checklist under a record's "Entry criteria" heading: each line's text
+/// and whether it is ticked.
+fn checklist(body: &str) -> Vec<(String, bool)> {
+    let Some((start, end)) = criteria_section(body) else {
+        return Vec::new();
+    };
     body.lines()
         .enumerate()
-        .filter(|(i, _)| *i + 1 > from && *i < to)
+        .filter(|(i, _)| *i >= start && *i < end)
         .filter_map(|(_, line)| CHECKBOX.captures(line))
-        .map(|c| CriterionState {
-            text: c[2].trim().to_string(),
-            checked: &c[1] != " ",
-        })
+        .map(|c| (c[2].trim().to_string(), &c[1] != " "))
         .collect()
+}
+
+/// Criterion text with runs of white space collapsed, for comparison.
+fn squash(text: &str) -> String {
+    text.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
+/// The state of every criterion: those the profile requires, in its order,
+/// then any the record adds. A required criterion that the record lacks is
+/// unconfirmed, so deleting a line from the record never satisfies a gate.
+fn criteria_state(required: &[&str], record: &Option<Vec<(String, bool)>>) -> Vec<CriterionState> {
+    let Some(entries) = record else {
+        return required
+            .iter()
+            .map(|text| CriterionState {
+                text: text.to_string(),
+                checked: false,
+                missing: false,
+            })
+            .collect();
+    };
+    let mut out: Vec<CriterionState> = required
+        .iter()
+        .map(|text| {
+            let wanted = squash(text);
+            let found: Vec<bool> = entries
+                .iter()
+                .filter(|(entry, _)| squash(entry) == wanted)
+                .map(|(_, checked)| *checked)
+                .collect();
+            CriterionState {
+                text: text.to_string(),
+                checked: !found.is_empty() && found.iter().all(|checked| *checked),
+                missing: found.is_empty(),
+            }
+        })
+        .collect();
+    for (entry, checked) in entries {
+        let own = squash(entry);
+        if !required.iter().any(|text| squash(text) == own) {
+            out.push(CriterionState {
+                text: entry.clone(),
+                checked: *checked,
+                missing: false,
+            });
+        }
+    }
+    out
+}
+
+/// Rebuilds a body from its lines, keeping the final newline.
+fn join_lines(lines: &[String]) -> String {
+    let mut out = lines.join("\n");
+    out.push('\n');
+    out
+}
+
+/// Unticks every entry criterion, for a review that starts again.
+fn clear_confirmations(body: &str) -> String {
+    let Some((start, end)) = criteria_section(body) else {
+        return body.to_string();
+    };
+    let lines: Vec<String> = body
+        .lines()
+        .enumerate()
+        .map(|(i, line)| {
+            if i >= start && i < end && CHECKBOX.is_match(line) {
+                line.replacen("[x]", "[ ]", 1).replacen("[X]", "[ ]", 1)
+            } else {
+                line.to_string()
+            }
+        })
+        .collect();
+    join_lines(&lines)
+}
+
+/// Adds every required criterion the checklist lacks, unticked.
+fn add_missing_criteria(body: &str, required: &[&str]) -> String {
+    let present: Vec<String> = checklist(body)
+        .iter()
+        .map(|(text, _)| squash(text))
+        .collect();
+    let missing: Vec<String> = required
+        .iter()
+        .filter(|text| !present.contains(&squash(text)))
+        .map(|text| format!("- [ ] {text}"))
+        .collect();
+    if missing.is_empty() {
+        return body.to_string();
+    }
+    let mut lines: Vec<String> = body.lines().map(str::to_string).collect();
+    let Some((start, end)) = criteria_section(body) else {
+        lines.push(String::new());
+        lines.push("## Entry criteria".to_string());
+        lines.push(String::new());
+        lines.extend(missing);
+        return join_lines(&lines);
+    };
+    let end = end.min(lines.len());
+    let last_item = (start..end).rev().find(|i| CHECKBOX.is_match(&lines[*i]));
+    let mut at = match last_item {
+        Some(i) => i + 1,
+        // An empty checklist: keep one blank line under the heading.
+        None if lines.get(start).is_some_and(|l| l.trim().is_empty()) => start + 1,
+        None => start,
+    };
+    for line in missing {
+        lines.insert(at, line);
+        at += 1;
+    }
+    if lines.get(at).is_some_and(|l| !l.trim().is_empty()) {
+        lines.insert(at, String::new());
+    }
+    join_lines(&lines)
 }
 
 fn checks_table(readiness: &Readiness) -> String {
@@ -353,18 +503,25 @@ pub fn open(
     let evidence = evidence_table(project, docs, phase);
 
     if let Some(existing) = record(docs, &gate) {
-        let (text, revised) = if existing.is_released() {
-            let revised = docs::revise(existing, date)?;
-            (set_outcome(&revised, "Pending"), true)
+        // A released record holds a decision. Another review starts in a new
+        // revision, with the outcome pending and every criterion unconfirmed.
+        let (current, revised) = if existing.is_released() {
+            let text = docs::revise(existing, date)?;
+            let reopened = Doc::parse(&project.root, &existing.path, text);
+            let body = clear_confirmations(&set_outcome(reopened.body(), "Pending"));
+            (format!("{}{body}", reopened.front_text()), true)
         } else {
             (existing.text.clone(), false)
         };
-        let text = replace_block(
-            &replace_block(&text, "checks", &checks),
+        let current = Doc::parse(&project.root, &existing.path, current);
+        let required = project.profile().criteria(phase, project.tier());
+        let body = add_missing_criteria(current.body(), &required);
+        let body = replace_block(
+            &replace_block(&body, "checks", &checks),
             "evidence",
             &evidence,
         );
-        std::fs::write(&existing.path, text)?;
+        std::fs::write(&existing.path, format!("{}{body}", current.front_text()))?;
         let id = existing.id().unwrap_or(&existing.rel).to_string();
         return Ok(if revised {
             Opened::Revised(id)
@@ -409,6 +566,8 @@ pub fn open(
 pub struct Closed {
     pub record: String,
     pub outcome: Outcome,
+    /// A go recorded with `--force` although the gate was not ready.
+    pub forced: bool,
     pub new_phase: Option<String>,
     pub created: Vec<String>,
 }
@@ -440,51 +599,61 @@ pub fn close(
     }
     let record_doc = record(docs, &gate)
         .ok_or_else(|| anyhow!("no review record for {gate}; run `jig gate open` first"))?;
+    let record_id = record_doc.id().unwrap_or(&record_doc.rel).to_string();
+
+    // Every refusal comes before the first write, so a refused decision
+    // leaves the record and the project as they were.
+    if record_doc.is_released() {
+        bail!(
+            "{record_id} is released and already holds a decision; run `jig gate open` to start another review"
+        );
+    }
+    let blockers = check::release_blockers(record_doc, findings);
+    if !blockers.is_empty() {
+        bail!(
+            "{record_id} cannot be released, so no decision is recorded:\n  {}",
+            blockers.join("\n  ")
+        );
+    }
     let readiness = readiness(project, docs, findings, phase);
-    if req.outcome.advances() && !readiness.ready() && !req.force {
-        let failing: Vec<String> = readiness
-            .checks
-            .iter()
-            .filter(|c| !c.ok)
-            .map(|c| format!("check failed: {} ({})", c.name, c.detail))
-            .chain(
-                readiness
-                    .criteria
-                    .iter()
-                    .filter(|c| !c.checked)
-                    .map(|c| format!("criterion unchecked: {}", c.text)),
-            )
-            .collect();
+    let forced = req.outcome.advances() && !readiness.ready();
+    if forced && !req.force {
         bail!(
             "{gate} is not ready for a go:\n  {}\nUse --force to record the decision anyway.",
-            failing.join("\n  ")
+            readiness.shortfalls().join("\n  ")
         );
     }
 
-    let mut outcome_text = format!("{} ({})", req.outcome.label(), req.date);
+    let mut label = req.outcome.label().to_string();
+    let mut outcome_text = label.clone();
+    if forced {
+        label.push_str(", forced");
+        outcome_text = format!("{label} past {}", readiness.shortfall_summary());
+    }
+    outcome_text.push_str(&format!(" ({})", req.date));
     if let Some(note) = req.note.filter(|n| !n.trim().is_empty()) {
         outcome_text.push_str(&format!(". {}", note.trim()));
     }
     let body = replace_block(record_doc.body(), "checks", &checks_table(&readiness));
     let body = replace_block(&body, "evidence", &evidence_table(project, docs, phase));
     let body = set_outcome(&body, &outcome_text);
-    let front = record_doc
-        .front
-        .as_ref()
-        .ok_or_else(|| anyhow!("{} has no front matter", record_doc.rel))?;
-    std::fs::write(&record_doc.path, format!("{}{body}", front.to_yaml()))?;
-    let reloaded = Doc::load(&project.root, &record_doc.path)?;
+    let decided = Doc::parse(
+        &project.root,
+        &record_doc.path,
+        format!("{}{body}", record_doc.front_text()),
+    );
     let released = docs::release(
-        &reloaded,
-        &format!("Gate decision: {}", req.outcome.label()),
+        &decided,
+        &format!("Gate decision: {label}"),
         req.date,
         req.author,
     )?;
     std::fs::write(&record_doc.path, released)?;
 
     let mut closed = Closed {
-        record: record_doc.id().unwrap_or(&record_doc.rel).to_string(),
+        record: record_id,
         outcome: req.outcome,
+        forced,
         new_phase: None,
         created: Vec::new(),
     };
@@ -568,6 +737,47 @@ mod tests {
             replace_block(body, "checks", "new\n"),
             "a\n<!-- jig:begin checks -->\nnew\n<!-- jig:end checks -->\nb\n"
         );
+    }
+
+    const RECORD: &str = "# Review\n\n## 3. Entry criteria\n\n- [x] First criterion.\n- [ ] Second criterion.\n\n## 4. Automated checks\n\n- [x] not a criterion\n";
+
+    #[test]
+    fn a_required_criterion_missing_from_the_record_is_unconfirmed() {
+        let entries = Some(checklist(RECORD));
+        let state = criteria_state(&["First criterion.", "Third criterion."], &entries);
+        assert_eq!(state.len(), 3);
+        assert!(state[0].checked && !state[0].missing);
+        assert!(
+            !state[1].checked && state[1].missing,
+            "the third criterion is required but absent"
+        );
+        assert_eq!(state[2].text, "Second criterion.");
+        assert!(!state[2].checked && !state[2].missing);
+    }
+
+    #[test]
+    fn an_empty_checklist_confirms_nothing() {
+        let state = criteria_state(&["Only criterion."], &Some(Vec::new()));
+        assert!(state.iter().all(|c| !c.checked && c.missing));
+    }
+
+    #[test]
+    fn missing_criteria_are_added_unticked() {
+        let out = add_missing_criteria(RECORD, &["First criterion.", "Third criterion."]);
+        assert!(out.contains("- [ ] Second criterion.\n- [ ] Third criterion.\n\n## 4."));
+        assert_eq!(add_missing_criteria(&out, &["Third criterion."]), out);
+        let emptied = "# Review\n\n## 3. Entry criteria\n\n\n## 4. Automated checks\n";
+        assert_eq!(
+            add_missing_criteria(emptied, &["Only criterion."]),
+            "# Review\n\n## 3. Entry criteria\n\n- [ ] Only criterion.\n\n## 4. Automated checks\n"
+        );
+    }
+
+    #[test]
+    fn confirmations_are_cleared_in_the_checklist_only() {
+        let out = clear_confirmations(RECORD);
+        assert!(out.contains("- [ ] First criterion."));
+        assert!(out.contains("- [x] not a criterion"));
     }
 
     #[test]

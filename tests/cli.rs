@@ -56,6 +56,41 @@ const PRODUCT: [&str; 8] = [
     "Demo device",
 ];
 
+const SOFTWARE: [&str; 6] = ["--kind", "software", "--code", "DM", "--title", "Demo tool"];
+
+fn read(path: &Path) -> String {
+    fs::read_to_string(path).unwrap()
+}
+
+/// Confirms every entry criterion in a gate review record.
+fn tick_all(record: &Path) {
+    fs::write(record, read(record).replace("- [ ]", "- [x]")).unwrap();
+}
+
+fn in_phase(root: &Path, phase: &str) -> bool {
+    read(&root.join("project.toml")).contains(&format!("phase = \"{phase}\""))
+}
+
+/// A software project in P0 whose first three documents are written. The
+/// documents named in `release` are released, and the Concept Review record
+/// is open.
+fn project_at_concept_review(bench: &Bench, release: &[&str]) -> (PathBuf, PathBuf) {
+    let root = bench.project("demo", &SOFTWARE);
+    for doc in ["docs/plan.md", "docs/concept.md", "docs/risks.md"] {
+        strip_guidance(&root.join(doc));
+    }
+    for id in release {
+        bench
+            .jig(&root)
+            .args(["doc", "release", id, "--note", "Baseline"])
+            .assert()
+            .success();
+    }
+    bench.jig(&root).args(["gate", "open"]).assert().success();
+    let record = root.join("docs/reviews/GR-CR.md");
+    (root, record)
+}
+
 #[test]
 fn a_new_product_walks_through_its_first_gate() {
     let bench = Bench::new();
@@ -98,34 +133,167 @@ fn a_new_product_walks_through_its_first_gate() {
     bench.jig(&root).args(["gate", "open"]).assert().success();
 
     let record = root.join("docs/reviews/GR-CR.md");
+    strip_guidance(&record);
+    let unconfirmed = read(&record);
     bench
         .jig(&root)
         .args(["gate", "close", "CR", "--outcome", "go"])
         .assert()
         .code(2);
-    strip_guidance(&record);
-    fs::write(
-        &record,
-        fs::read_to_string(&record)
-            .unwrap()
-            .replace("- [ ]", "- [x]"),
-    )
-    .unwrap();
+    assert!(in_phase(&root, "P0"), "a refused go leaves the phase alone");
+    assert_eq!(
+        read(&record),
+        unconfirmed,
+        "a refused go leaves the record alone"
+    );
+    tick_all(&record);
     bench
         .jig(&root)
         .args(["gate", "close", "CR", "--outcome", "go"])
         .assert()
         .success();
 
-    let config = fs::read_to_string(root.join("project.toml")).unwrap();
-    assert!(config.contains("phase = \"P1\""));
+    assert!(in_phase(&root, "P1"));
     assert!(
         root.join("docs/requirements.md").exists(),
         "the SRS is drafted on entering Definition"
     );
-    let record = fs::read_to_string(&record).unwrap();
+    let record = read(&record);
     assert!(record.contains("status: released"));
-    assert!(record.contains("**Outcome:** Go"));
+    assert!(record.contains("**Outcome:** Go ("));
+}
+
+#[test]
+fn a_gate_takes_its_criteria_from_the_profile() {
+    let bench = Bench::new();
+    let (root, record) = project_at_concept_review(&bench, &["PLN", "CON"]);
+    strip_guidance(&record);
+    // Delete every criterion from the record instead of confirming it.
+    let emptied: String = read(&record)
+        .lines()
+        .filter(|line| !line.starts_with("- [ ]"))
+        .map(|line| format!("{line}\n"))
+        .collect();
+    fs::write(&record, &emptied).unwrap();
+
+    let output = bench
+        .jig(&root)
+        .args(["gate", "check", "--json"])
+        .assert()
+        .code(1)
+        .get_output()
+        .stdout
+        .clone();
+    let readiness: serde_json::Value = serde_json::from_slice(&output).unwrap();
+    let criteria = readiness["criteria"].as_array().unwrap();
+    assert_eq!(
+        criteria.len(),
+        4,
+        "the profile's criteria are still required"
+    );
+    assert!(
+        criteria
+            .iter()
+            .all(|c| c["missing"] == true && c["checked"] == false)
+    );
+
+    bench
+        .jig(&root)
+        .args(["gate", "close", "CR", "--outcome", "go"])
+        .assert()
+        .code(2);
+    assert!(in_phase(&root, "P0"));
+    assert_eq!(read(&record), emptied, "a refused go changes nothing");
+
+    // Refreshing the record puts the missing criteria back, unconfirmed.
+    bench.jig(&root).args(["gate", "open"]).assert().success();
+    assert_eq!(read(&record).matches("- [ ] ").count(), 4);
+}
+
+#[test]
+fn a_review_record_is_finished_and_decided_once() {
+    let bench = Bench::new();
+    let (root, record) = project_at_concept_review(&bench, &["PLN", "CON"]);
+    tick_all(&record);
+
+    // The summary is still template guidance, so no decision can be recorded.
+    let unfinished = read(&record);
+    for outcome in ["go", "iterate", "kill"] {
+        bench
+            .jig(&root)
+            .args(["gate", "close", "CR", "--outcome", outcome, "--force"])
+            .assert()
+            .code(2);
+    }
+    assert_eq!(read(&record), unfinished);
+    assert!(in_phase(&root, "P0"));
+
+    strip_guidance(&record);
+    bench
+        .jig(&root)
+        .args(["gate", "close", "CR", "--outcome", "iterate"])
+        .assert()
+        .success();
+    let decided = read(&record);
+    assert!(decided.contains("status: released"));
+    assert!(decided.contains("**Outcome:** Iterate"));
+
+    // A second decision without reopening the review is refused and changes nothing.
+    bench
+        .jig(&root)
+        .args(["gate", "close", "CR", "--outcome", "go"])
+        .assert()
+        .code(2);
+    assert_eq!(read(&record), decided);
+    assert!(in_phase(&root, "P0"));
+
+    // Reopening starts a new revision with every confirmation cleared.
+    bench.jig(&root).args(["gate", "open"]).assert().success();
+    let reopened = read(&record);
+    assert!(reopened.contains("revision: B") && reopened.contains("status: draft"));
+    assert!(reopened.contains("**Outcome:** Pending"));
+    assert!(!reopened.contains("- [x]"));
+    assert_eq!(reopened.matches("- [ ] ").count(), 4);
+}
+
+#[test]
+fn a_go_needs_every_check_unless_it_is_forced() {
+    let bench = Bench::new();
+    // The concept brief stays a draft, so one automated check fails.
+    let (root, record) = project_at_concept_review(&bench, &["PLN"]);
+    strip_guidance(&record);
+    tick_all(&record);
+
+    let refused = bench
+        .jig(&root)
+        .args(["gate", "close", "CR", "--outcome", "go"])
+        .assert()
+        .code(2)
+        .get_output()
+        .stderr
+        .clone();
+    assert!(String::from_utf8_lossy(&refused).contains("check failed"));
+    assert!(in_phase(&root, "P0"));
+    assert!(read(&record).contains("status: draft"));
+
+    bench
+        .jig(&root)
+        .args([
+            "gate",
+            "close",
+            "CR",
+            "--outcome",
+            "go",
+            "--force",
+            "--note",
+            "Accepted for the demonstration",
+        ])
+        .assert()
+        .success();
+    assert!(in_phase(&root, "P1"));
+    let record = read(&record);
+    assert!(record.contains("**Outcome:** Go, forced past 1 failed check ("));
+    assert!(record.contains("Gate decision: Go, forced"));
 }
 
 #[test]

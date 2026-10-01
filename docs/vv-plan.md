@@ -2,9 +2,9 @@
 id: JIG-VVP
 title: Verification and validation plan
 kind: vvp
-revision: C
-status: released
-date: 2026-09-30
+revision: D
+status: draft
+date: 2026-10-01
 author: dR4y54m5
 gate: TRR
 ---
@@ -98,8 +98,8 @@ Every automated test runs with `cargo test`. The PDF test renders only when Pand
 - **Verifies:** REQ-015
 - **Method:** Test
 - **Level:** System
-- **Procedure:** `cargo test --test cli a_new_product_walks_through_its_first_gate`
-- **Pass criteria:** Closing the gate before the entry criteria are confirmed exits with an error and leaves the phase unchanged.
+- **Procedure:** `cargo test --test cli -- a_new_product_walks_through_its_first_gate a_go_needs_every_check_unless_it_is_forced`
+- **Pass criteria:** Both tests pass: a go is refused while an entry criterion is unconfirmed and while an automated check fails, the phase and the record stay unchanged, and the same go is recorded when `--force` is given.
 
 ### TC-009 Rendered document layout
 
@@ -188,6 +188,30 @@ Every automated test runs with `cargo test`. The PDF test renders only when Pand
 - **Level:** System
 - **Procedure:** `cargo test --test cli init_installs_the_bench_guide_from_the_vault`
 - **Pass criteria:** The test passes: `jig init` installs the vault's guide at the bench root and updates it when the vault copy changes.
+
+### TC-020 A gate takes its criteria from the profile
+
+- **Verifies:** REQ-029, REQ-032
+- **Method:** Test
+- **Level:** System
+- **Procedure:** `cargo test --test cli a_gate_takes_its_criteria_from_the_profile`
+- **Pass criteria:** The test passes: with every criterion deleted from the record, readiness reports each of the profile's criteria as missing, a go is refused with the record and the phase unchanged, and `jig gate open` restores the criteria unconfirmed.
+
+### TC-021 A review record is finished and decided once
+
+- **Verifies:** REQ-030, REQ-031, REQ-032, REQ-033
+- **Method:** Test
+- **Level:** System
+- **Procedure:** `cargo test --test cli a_review_record_is_finished_and_decided_once`
+- **Pass criteria:** The test passes: no outcome is recorded while the summary is template guidance, even with `--force`; a second decision on a released record is refused and leaves it unchanged; reopening gives Rev B with the outcome pending and no criterion confirmed.
+
+### TC-022 A forced go is marked
+
+- **Verifies:** REQ-034
+- **Method:** Test
+- **Level:** System
+- **Procedure:** `cargo test --test cli a_go_needs_every_check_unless_it_is_forced`
+- **Pass criteria:** The test passes: the outcome line and the revision history of the record both state that the go was forced, and the outcome names the failed check.
 
 ## 5. Validation
 

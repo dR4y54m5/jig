@@ -594,6 +594,29 @@ impl Checker<'_> {
     }
 }
 
+/// Why a document cannot be released: the errors `jig check` reports in it,
+/// and any template guidance left in its text.
+pub fn release_blockers(doc: &Doc, findings: &[Finding]) -> Vec<String> {
+    let mut blockers: Vec<String> = findings
+        .iter()
+        .filter(|f| {
+            f.file == doc.rel && f.severity == Severity::Error && f.rule != "template.guide"
+        })
+        .map(|f| format!("{}:{}: {} [{}]", f.file, f.line, f.message, f.rule))
+        .collect();
+    let guides = markdown::guide_comments(doc.body(), doc.body_line);
+    if !guides.is_empty() {
+        let lines: Vec<String> = guides.iter().map(usize::to_string).collect();
+        blockers.push(format!(
+            "{}: template guidance remains at line{} {}",
+            doc.rel,
+            if lines.len() == 1 { "" } else { "s" },
+            lines.join(", ")
+        ));
+    }
+    blockers
+}
+
 pub fn counts(findings: &[Finding]) -> (usize, usize) {
     let errors = findings
         .iter()
