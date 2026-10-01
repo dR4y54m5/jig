@@ -223,7 +223,7 @@ Automated tests: `cargo test` ran 90 tests (59 unit, 31 system); 90 passed, and 
 |---|---|---|---|
 | AN-01 | The review of 2026-10-01 found defects that the test cases of JIG-TR-002 did not reach: a gate passed once its criteria were deleted from the record, a gate closed on a record that still held template guidance, a refused close rewrote a released record, a template placeholder switched off the link checks of its file, and private references were searched in Markdown only | High | Fixed in this build; TC-005, TC-008 and TC-020 to TC-025 now cover each case |
 | AN-02 | Flowcharts with many labelled edges place labels loosely and shrink wide diagrams, as in section 5 of JIG-CON | Low | Open; a limitation of the Mermaid renderer, recorded against RISK-002 |
-| AN-03 | A page break can separate a requirement's statement from its attribute list, or a section heading from its table | Low | Open |
+| AN-03 | A page break can separate a requirement's statement from its attribute list, or a heading and its introductory line from the table they introduce. A heading itself is never left alone: it stays with the block that follows it | Low | Open |
 
 ## 5. Summary
 

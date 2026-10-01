@@ -24,7 +24,7 @@ jig implements a staged engineering process: phases closed by gate reviews, cont
 4. Record what the user wants to learn from the project in the vault roadmap, not in the project repository.
 5. Run `jig check` and `jig status`, and tell the user what the Concept Review needs next. Mention the workspace file (`jig vault path` shows the vault; workspaces are in its `workspaces/` folder).
 
-To bring an existing repository under the process, use `jig adopt <path>` with `--phase` set to where the project really is. Earlier phases' documents are drafted so they can be written retroactively; record the gates not held in the plan's tailoring table.
+To bring an existing repository under the process, use `jig adopt <path>` with `--phase` set to where the project really is. The dry run and the adoption end with what `jig check` finds in the existing files: show it, and either fix each error or, for third-party paths, adopt with `--exclude <path>`. Earlier phases' documents are drafted so they can be written retroactively; record the gates not held in the plan's tailoring table.
 
 ## Writing documents
 

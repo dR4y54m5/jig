@@ -348,7 +348,7 @@ Diagrams are text in the document, which is their source of truth; GitHub and th
 
 `jig doc pdf <ID>` renders one document, and `jig doc pack [GATE]` renders a gate package, into `build/pdf/`, which git ignores. A `.png` output path containing `{p}` renders one image per page for previews.
 
-Every page shows the document ID and revision in its header, and the project and "Page X of Y" in its footer. Each document starts with a title block of its document-control fields. Draft, in-review and superseded documents carry a watermark. A gate package opens with a cover page stating the gate, its question and the contents, followed by the gate review record, the documents required up to the gate in lifecycle order, any specifications, test reports, findings reports, errata, change orders, spike reports and decision records, and, from SRR, the requirements traceability matrix.
+Every page shows the document ID and revision in its header, and the project and "Page X of Y" in its footer. Each document starts with a title block of its document-control fields. Draft, in-review and superseded documents carry a watermark. A gate package opens with a cover page stating the gate, its question and the contents, followed by the gate review record. Then come, in one fixed order of kinds, the documents required up to the gate and any specifications, test reports, findings reports, errata, change orders, spike reports and decision records that exist. From SRR on, the package ends with the requirements traceability matrix.
 
 ## 14. Configuration management
 

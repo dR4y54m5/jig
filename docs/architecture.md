@@ -72,7 +72,9 @@ flowchart TB
 
 | Module | Responsibility |
 |---|---|
+| `main` | Parses the command line, runs each command and prints text or JSON |
 | `process` | Loads and validates the embedded document kinds and lifecycle profiles |
+| `templates` | Holds the embedded document and project templates and the rendering assets; fills placeholders |
 | `project`, `bench` | Discover the project and the bench; read `project.toml`, the registry and the vault configuration |
 | `frontmatter` | Parses and writes the document-control subset of YAML ([JIG-ADR-004](decisions/ADR-004-parse-a-strict-front-matter-subset.md)) |
 | `markdown` | Fences, prose lines, headings and links, aware of code blocks and comments |

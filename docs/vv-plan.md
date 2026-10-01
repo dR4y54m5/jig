@@ -34,6 +34,7 @@ Every automated test runs with `cargo test`. The PDF test renders only when Pand
 | Rust toolchain | 1.96 |
 | Pandoc | 3.11 |
 | Typst | 0.15.1 |
+| git | 2.50 |
 
 ## 4. Test cases
 
@@ -292,8 +293,11 @@ Every automated test runs with `cargo test`. The PDF test renders only when Pand
 | N-01 | Start the first hardware and software projects with `jig new` and `jig adopt` | Pending |
 | N-02 | Use `jig status` and `jig gate check` through a full gate on a real project | Pending |
 | N-03 | Run the pre-commit check on every commit of the first real projects | Pending |
+| N-04 | Hold a real project's requirements review with `jig check` and the traceability matrix as its evidence | Pending |
 | N-05 | Send a gate package to a reviewer and record the feedback | Pending |
 | N-06 | Drive every command from an AI session | Pending |
+| N-07 | Rebuild the bench on a second machine from the vault with `jig init` and `jig sync` | Pending |
+| N-08 | Publish a project, then confirm that the repository and its history hold no agent file and that `jig sync` restores the instructions on a second machine | Pending |
 
 ## 6. Revision history
 

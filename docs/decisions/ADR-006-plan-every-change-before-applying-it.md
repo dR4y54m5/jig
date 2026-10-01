@@ -2,9 +2,9 @@
 id: JIG-ADR-006
 title: Plan every change before applying it
 kind: adr
-revision: A
-status: released
-date: 2026-09-30
+revision: B
+status: draft
+date: 2026-10-01
 author: dR4y54m5
 gate: TRR
 ---
@@ -13,7 +13,7 @@ gate: TRR
 
 ## Context and problem statement
 
-`jig new`, `jig adopt` and `jig init` create directories, write files, initialize repositories, update the registry and install hooks. An AI pair runs these commands and should show the engineer what will change before it changes.
+`jig new`, `jig adopt`, `jig init` and `jig setup` create directories, write files, initialize repositories, update the registry and install hooks. An AI pair runs these commands and should show the engineer what will change before it changes.
 
 ## Decision drivers
 
@@ -27,7 +27,7 @@ gate: TRR
 
 ## Decision outcome
 
-Chosen option: 2, because one code path produces the plan, so the dry run cannot diverge from the real run. Applying a plan skips any file that already exists unless the action explicitly allows overwriting, which only the regenerated workspace file does.
+Chosen option: 2, because one code path produces the plan, so the dry run cannot diverge from the real run. Applying a plan skips any file that already exists unless the action explicitly allows overwriting. Only the files jig generates or installs allow it: the workspace file, the bench guide and a project's installed agent instructions. A dry run marks each step that would change nothing.
 
 ### Consequences
 

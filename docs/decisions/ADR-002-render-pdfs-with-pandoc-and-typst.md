@@ -2,9 +2,9 @@
 id: JIG-ADR-002
 title: Render PDFs with Pandoc and Typst
 kind: adr
-revision: A
-status: released
-date: 2026-09-30
+revision: B
+status: draft
+date: 2026-10-01
 author: dR4y54m5
 gate: TRR
 ---
@@ -30,7 +30,7 @@ Reviewers receive documents and gate packages as PDF. The source is GitHub-flavo
 
 ## Decision outcome
 
-Chosen option: 4, because Pandoc's GitHub-flavored Markdown reader is the reference implementation, and Typst offers a layout language that is readable, fast and small. A Lua filter adapts Pandoc's output (callouts, diagrams, links between documents, unique labels), and one Typst library (`assets/bench.typ`) defines the page design for single documents and packages. [JIG-SPK-001](../spikes/SPK-001-pdf-pipeline.md) confirmed the pipeline.
+Chosen option: 4, because Pandoc reads GitHub-flavored Markdown accurately, tables and alerts included, and Typst offers a layout language that is readable, fast and small. A Lua filter adapts Pandoc's output (callouts, diagrams, links between documents, unique labels), and one Typst library (`assets/bench.typ`) defines the page design for single documents and packages. [JIG-SPK-001](../spikes/SPK-001-pdf-pipeline.md) confirmed the pipeline.
 
 ### Consequences
 

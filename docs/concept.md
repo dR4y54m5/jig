@@ -2,9 +2,9 @@
 id: JIG-CON
 title: Concept brief
 kind: con
-revision: A
-status: released
-date: 2026-09-30
+revision: B
+status: draft
+date: 2026-10-01
 author: dR4y54m5
 gate: CR
 ---
@@ -38,6 +38,7 @@ A solo engineer building hardware and software products benefits from the discip
 | N-05 | Send a reviewer one PDF per gate that reads like an industrial review package | Reviewer | Must |
 | N-06 | Drive every operation from an AI session, without interactive prompts | AI pair | Must |
 | N-07 | Rebuild the whole bench on a new machine | Engineer | Should |
+| N-08 | Keep the AI pair's instructions and settings out of every project repository and its history, and get them back on any machine | Engineer | Must |
 
 ## 5. Operational concept
 

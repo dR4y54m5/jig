@@ -18,6 +18,7 @@ How jig is organised, built and tested, and how it is changed without breaking t
 | `src/render.rs` | Diagrams, Markdown to Typst, PDF and gate packages |
 | `src/scaffold.rs` | Plans for `init`, `new`, `adopt` and `setup` ([JIG-ADR-006](docs/decisions/ADR-006-plan-every-change-before-applying-it.md)); the pre-commit hook and the agent files ([JIG-ADR-007](docs/decisions/ADR-007-keep-agent-instructions-in-the-vault-and-install.md)) |
 | `src/explain.rs` | `jig explain` text |
+| `src/templates.rs` | The embedded templates and rendering assets, and placeholder filling |
 | `process/kinds.toml`, `process/profiles/*.toml` | The process as data ([JIG-ADR-001](docs/decisions/ADR-001-encode-the-process-as-data-embedded-in-the-binary.md)) |
 | `templates/docs/` | One body template per document kind |
 | `templates/project/` | README, CLAUDE.md and directory READMEs for new projects |

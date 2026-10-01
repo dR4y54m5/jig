@@ -245,7 +245,7 @@ When jig installs agent instructions or writes local agent settings, jig shall l
 - **Verification:** Test
 - **Priority:** Must
 - **Rationale:** Neither file is ever committed, and no tracked file names them.
-- **Source:** N-03
+- **Source:** N-08
 
 ### REQ-028 Bench guide
 
@@ -344,7 +344,7 @@ If git tracks a project's agent instructions or local agent settings, then `jig 
 - **Verification:** Test
 - **Priority:** Must
 - **Rationale:** The pre-commit hook then refuses the commit that would publish them.
-- **Source:** N-03
+- **Source:** N-08
 
 ### REQ-039 First agent instructions
 
@@ -353,7 +353,7 @@ If a project's vault folder holds no agent instructions when the project is crea
 - **Verification:** Test
 - **Priority:** Should
 - **Rationale:** Instructions a repository already has are kept, and move to the vault with their content.
-- **Source:** N-06
+- **Source:** N-08
 
 ### REQ-040 Pre-commit check
 

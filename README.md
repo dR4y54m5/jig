@@ -1,11 +1,11 @@
 # jig
 
-A command-line tool that scaffolds, checks and renders engineering projects run through a staged, standards-based process, from concept through gate reviews to production. It is built for a solo engineer working with an AI pair: every command is non-interactive, prints JSON on request, and states the process rules through `jig explain` instead of relying on memory.
+A command-line tool that scaffolds, checks and renders engineering projects run through a staged process modelled on industrial practice, from concept through gate reviews to production. It is built for a solo engineer working with an AI pair: every command is non-interactive, prints JSON on request, and states the process rules through `jig explain` instead of relying on memory.
 
 ## What it does
 
 - **Scaffolds** a project for its kind (hardware product, software, reverse engineering or exercise) and tier, drafting the documents its phases require.
-- **Checks** document control, requirement quality (EARS patterns and INCOSE writing rules), traceability references, diagrams, and the separation between a project's engineering record and private learning material.
+- **Checks** document control, requirement quality (one `shall` per statement, a verification method, no vague terms), traceability references, diagrams, and the separation between a project's engineering record and private material, in every text file git would commit.
 - **Runs gate reviews**: readiness against the lifecycle profile, a review record with entry criteria and evidence, and the decision that moves the project to its next phase.
 - **Renders** documents and gate review packages to PDF, with a title block, document-control header, page numbering, draft watermarks and a generated requirements traceability matrix.
 
@@ -63,7 +63,7 @@ jig doc pack                               # the gate review package as one PDF
 | `jig sync` | Clone registered projects missing from this machine |
 | `jig setup` | Install a project's pre-commit hook, agent instructions and local agent settings |
 
-Every command accepts `--json` and then prints one JSON document. `jig new`, `jig adopt` and `jig init` accept `--dry-run`, which lists every planned change without making it.
+Every command accepts `--json` and then prints one JSON document. `jig new`, `jig adopt`, `jig init` and `jig sync` accept `--dry-run`, which lists every planned change without making it.
 
 ## Working with agents
 
