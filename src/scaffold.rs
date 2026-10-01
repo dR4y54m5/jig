@@ -11,7 +11,7 @@ use serde::Serialize;
 use crate::bench::{Bench, RegistryEntry};
 use crate::docs::{self, DocRequest};
 use crate::process::{Naming, Process};
-use crate::project::{PROJECT_FILE, Project, ProjectMeta};
+use crate::project::{CheckConfig, PROJECT_FILE, Project, ProjectMeta};
 use crate::templates;
 
 const HOOK_MARKER: &str = "Installed by jig";
@@ -350,6 +350,8 @@ pub struct Setup {
     pub visibility: String,
     pub phase: Option<String>,
     pub remote: String,
+    /// Paths `jig check` skips in this project, relative to its root.
+    pub exclude: Vec<String>,
     /// An existing repository to adopt instead of creating a new one.
     pub existing: Option<PathBuf>,
 }
@@ -404,7 +406,13 @@ fn layout(kind: &str) -> &'static str {
     }
 }
 
-pub fn project_plan(bench: &Bench, setup: &Setup, date: &str, author: &str) -> Result<Plan> {
+/// The plan that creates or adopts a project, and the project as it will be.
+pub fn project_plan(
+    bench: &Bench,
+    setup: &Setup,
+    date: &str,
+    author: &str,
+) -> Result<(Plan, Project)> {
     validate(setup)?;
     bench.require_vault()?;
     let profile = Process::get().profile(&setup.kind).ok_or_else(|| {
@@ -471,6 +479,9 @@ pub fn project_plan(bench: &Bench, setup: &Setup, date: &str, author: &str) -> R
     let project = Project {
         root: root.clone(),
         meta: meta.clone(),
+        check: CheckConfig {
+            exclude: setup.exclude.clone(),
+        },
     };
     let mut plan = Plan::default();
 
@@ -478,7 +489,7 @@ pub fn project_plan(bench: &Bench, setup: &Setup, date: &str, author: &str) -> R
         plan.dir(root.clone());
         plan.actions.push(Action::GitInit { path: root.clone() });
     }
-    plan.file(root.join(PROJECT_FILE), meta.to_toml()?);
+    plan.file(root.join(PROJECT_FILE), project.to_toml()?);
     let readme = templates::template("project/README.md").expect("README template is embedded");
     plan.file(
         root.join("README.md"),
@@ -570,7 +581,7 @@ pub fn project_plan(bench: &Bench, setup: &Setup, date: &str, author: &str) -> R
         });
     }
     agent_actions(&mut plan, bench, &root, &meta);
-    Ok(plan)
+    Ok((plan, project))
 }
 
 fn roadmap(bench: &Bench, setup: &Setup, phases: &[String]) -> String {
@@ -663,6 +674,7 @@ mod tests {
             visibility: "public".into(),
             phase: None,
             remote: String::new(),
+            exclude: Vec::new(),
             existing: None,
         };
         assert!(validate(&setup("air-remote-2", "AR2")).is_ok());

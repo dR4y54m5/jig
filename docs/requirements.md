@@ -87,7 +87,7 @@ If a project repository contains a teaching phrase outside code blocks, code spa
 
 ### REQ-007 Private references
 
-If a project repository mentions the vault path or a private term, or links to an absolute path or outside the repository, then `jig check` shall report an error.
+If a text file in a project repository mentions the vault path, a private term or an absolute home-directory path, then `jig check` shall report an error.
 
 - **Verification:** Test
 - **Priority:** Must
@@ -96,7 +96,7 @@ If a project repository mentions the vault path or a private term, or links to a
 
 ### REQ-008 Singular requirement statements
 
-`jig check` shall report each requirement statement that does not contain exactly one `shall`.
+`jig check` shall report an error for each requirement statement that does not contain exactly one `shall`.
 
 - **Verification:** Test
 - **Priority:** Must
@@ -309,6 +309,33 @@ When a go is recorded with `--force` while a check fails or an entry criterion i
 - **Priority:** Must
 - **Rationale:** A reader of the record sees that the gate was passed against its criteria.
 - **Source:** N-02
+
+### REQ-035 Links that leave the repository
+
+If a Markdown file links to an absolute path or to a path outside the repository, by an inline link, a reference definition or an HTML attribute, then `jig check` shall report an error.
+
+- **Verification:** Test
+- **Priority:** Must
+- **Rationale:** A link out of the repository reveals where private material is kept, whatever syntax it uses.
+- **Source:** N-03
+
+### REQ-036 Files outside the check
+
+`jig check` shall skip the files that git ignores and the paths listed under `exclude` in `project.toml`.
+
+- **Verification:** Test
+- **Priority:** Should
+- **Rationale:** Dependencies and third-party text are not the project's own documents, and an exclusion is a recorded decision.
+- **Source:** N-03
+
+### REQ-037 Adoption report
+
+When `jig adopt` is run, jig shall report the errors that `jig check` finds in the repository.
+
+- **Verification:** Test
+- **Priority:** Should
+- **Rationale:** The engineer sees what must change before the first commit, which the pre-commit hook would refuse.
+- **Source:** N-01
 
 ## 4. Performance requirements
 

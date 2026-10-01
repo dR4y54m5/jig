@@ -71,11 +71,11 @@ Every automated test runs with `cargo test`. The PDF test renders only when Pand
 
 ### TC-005 Teaching material and private references are rejected
 
-- **Verifies:** REQ-006, REQ-007
+- **Verifies:** REQ-006, REQ-007, REQ-035
 - **Method:** Test
 - **Level:** System
-- **Procedure:** `cargo test --test cli -- check_rejects_teaching_material_and_private_references quoted_phrases_in_code_spans_are_not_teaching`
-- **Pass criteria:** Both tests pass: a teaching phrase, a private term and a link outside the repository are errors, and a phrase in a code span is not.
+- **Procedure:** `cargo test --test cli -- check_rejects_teaching_material_and_private_references quoted_phrases_in_code_spans_are_not_teaching check_finds_private_references_in_every_text_file check_follows_every_kind_of_link`
+- **Pass criteria:** The four tests pass: a teaching phrase is an error and the same phrase in a code span is not; the vault path, a private term and a home path are errors in files that are not Markdown; a link out of the repository is an error as an inline link, an absolute path, an HTML attribute and a reference definition, in a file that also holds a template placeholder.
 
 ### TC-006 Requirement rules are enforced
 
@@ -83,7 +83,7 @@ Every automated test runs with `cargo test`. The PDF test renders only when Pand
 - **Method:** Test
 - **Level:** System
 - **Procedure:** `cargo test --test cli check_enforces_requirement_rules`
-- **Pass criteria:** The test passes: a missing `shall`, a missing verification method, a vague term and an undefined requirement reference are each reported.
+- **Pass criteria:** The test passes: a missing `shall`, a statement with two `shall`s, a missing verification method, a vague term and an undefined requirement reference are each reported, the first two as errors.
 
 ### TC-007 The traceability matrix joins requirements, tests and results
 
@@ -212,6 +212,22 @@ Every automated test runs with `cargo test`. The PDF test renders only when Pand
 - **Level:** System
 - **Procedure:** `cargo test --test cli a_go_needs_every_check_unless_it_is_forced`
 - **Pass criteria:** The test passes: the outcome line and the revision history of the record both state that the go was forced, and the outcome names the failed check.
+
+### TC-023 Ignored and excluded files are skipped
+
+- **Verifies:** REQ-036
+- **Method:** Test
+- **Level:** System
+- **Procedure:** `cargo test --test cli check_skips_ignored_and_excluded_files`
+- **Pass criteria:** The test passes: a teaching phrase is reported in a tracked directory and not in one that git ignores, and it is no longer reported once the directory is listed under `exclude`.
+
+### TC-024 Adoption reports what the existing files fail
+
+- **Verifies:** REQ-037
+- **Method:** Test
+- **Level:** System
+- **Procedure:** `cargo test --test cli adoption_reports_what_the_existing_files_fail`
+- **Pass criteria:** The test passes: the dry run and the adoption both report the two errors in the existing files, and the dry run writes nothing.
 
 ## 5. Validation
 

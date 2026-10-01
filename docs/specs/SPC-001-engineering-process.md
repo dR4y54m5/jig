@@ -119,16 +119,17 @@ References run one way. Vault documents cite project documents by ID, such as `E
 
 ### 5.4 Enforcement
 
-`jig check` enforces the rule on every Markdown file in a project repository, and the pre-commit hook blocks a commit with errors.
+`jig check` enforces the rule in a project repository, and the pre-commit hook blocks a commit with errors. The check covers the files git tracks or would add: a file that git ignores is skipped, and so is any path listed under `exclude` in the `[check]` table of `project.toml`, which records the engineer's decision to leave third-party content out. Outside a git repository the check covers every file except hidden directories and build output.
 
-| Rule | Severity | Detects |
-|---|---|---|
-| `separation.teaching` | Error | Teaching phrases: `you'll learn`, `you will learn`, `we'll learn`, `let's`, `let us`, `notice that`, `notice how`, `your turn`, `exercise for the reader`, `predict, then`, `decode box`, `as a beginner`, `learning goal`, `learning objective`, `quiz`, `homework` |
-| `separation.teaching` | Warning | Words that usually signal teaching: `tutorial`, `walkthrough`, `try it`, `try this`, `step-by-step guide` (not reported in end-user documents) |
-| `separation.second-person` | Warning | `you` and `your` in engineering documents under `docs/` |
-| `separation.private-reference` | Error | The vault's path, any private term listed in the vault's `jig.toml`, absolute paths, and links that leave the repository |
+| Rule | Severity | Applies to | Detects |
+|---|---|---|---|
+| `separation.teaching` | Error | Markdown | Teaching phrases: `you'll learn`, `you will learn`, `we'll learn`, `let's`, `let us`, `notice that`, `notice how`, `your turn`, `exercise for the reader`, `predict, then`, `decode box`, `as a beginner`, `learning goal`, `learning objective`, `quiz`, `homework` |
+| `separation.teaching` | Warning | Markdown | Words that usually signal teaching: `tutorial`, `walkthrough`, `try it`, `try this`, `step-by-step guide` (not reported in end-user documents) |
+| `separation.second-person` | Warning | Markdown under `docs/` | `you` and `your` in engineering documents |
+| `separation.private-reference` | Error | Every text file | The vault's path, any private term listed in the vault's `jig.toml`, and any absolute path under a home directory (`/Users/` or `/home/` followed by a user name) |
+| `separation.private-reference` | Error | Markdown | A link to an absolute path or to a path outside the repository, as an inline link, a reference definition or the `href` or `src` attribute of HTML |
 
-Text in code blocks, code spans and HTML comments is exempt, so a phrase can be quoted in backticks.
+Text in code blocks, code spans and HTML comments is exempt from the teaching and second-person rules, so a phrase can be quoted in backticks. Private references are reported wherever they appear, code included. Link syntax quoted in a code span is not a link.
 
 ## 6. Project kinds and tiers
 
@@ -305,7 +306,7 @@ Every document except a decision record opens with a Purpose and scope section a
 
 ### 11.1 Requirements
 
-Each requirement is a heading `REQ-NNN Title` (level three, or level four inside a subsection), a one-sentence statement with exactly one `shall`, and an attribute list: Verification (Inspection, Analysis, Demonstration or Test), Priority (Must, Should or Could), Rationale and Source (a stakeholder need). Statements follow the EARS patterns: ubiquitous, event-driven (When), state-driven (While), unwanted behaviour (If, then) and optional feature (Where). `jig check` reports statements without exactly one `shall`, missing or unknown verification methods, and these vague terms: appropriate, adequate, as applicable, as appropriate, easy, easily, user-friendly, fast, quickly, sufficient, robust, flexible, approximately, etc, and/or, if possible, as far as possible, minimize, maximize, optimal, best, typical, several and many.
+Each requirement is a heading `REQ-NNN Title` (level three, or level four inside a subsection), a one-sentence statement with exactly one `shall`, and an attribute list: Verification (Inspection, Analysis, Demonstration or Test), Priority (Must, Should or Could), Rationale and Source (a stakeholder need). Statements follow the EARS patterns: ubiquitous, event-driven (When), state-driven (While), unwanted behaviour (If, then) and optional feature (Where). `jig check` reports an error for a statement without exactly one `shall` and for a missing or unknown verification method, and a warning for each of these vague terms: appropriate, adequate, as applicable, as appropriate, easy, easily, user-friendly, fast, quickly, sufficient, robust, flexible, approximately, etc, and/or, if possible, as far as possible, minimize, maximize, optimal, best, typical, several and many. The gate check that requirements are well formed fails on the errors and states the number of warnings.
 
 ### 11.2 Test cases and results
 

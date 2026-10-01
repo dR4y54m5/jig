@@ -143,6 +143,9 @@ struct ProjectArgs {
     /// Git remote URL recorded in the registry
     #[arg(long, default_value = "")]
     remote: String,
+    /// A path `jig check` skips, such as vendored third-party code; repeat for more
+    #[arg(long, value_name = "PATH")]
+    exclude: Vec<String>,
     /// Show what would be created without creating it
     #[arg(long)]
     dry_run: bool,
@@ -235,7 +238,7 @@ fn run(cli: Cli) -> Result<ExitCode> {
         Command::New { name, project } => {
             let dry_run = project.dry_run;
             let setup = setup(name, None, project);
-            let plan =
+            let (plan, _) =
                 scaffold::project_plan(&bench, &setup, &docs::today(), &docs::author(&bench.root))?;
             apply(&bench, plan, dry_run, json)
         }
@@ -257,8 +260,40 @@ fn run(cli: Cli) -> Result<ExitCode> {
             let dry_run = project.dry_run;
             let author = docs::author(&canonical);
             let setup = setup(name, Some(canonical), project);
-            let plan = scaffold::project_plan(&bench, &setup, &docs::today(), &author)?;
-            apply(&bench, plan, dry_run, json)
+            let (plan, project) = scaffold::project_plan(&bench, &setup, &docs::today(), &author)?;
+            let (mut value, mut text) = execute(&bench, plan, dry_run)?;
+
+            // What `jig check` makes of the repository, so the engineer knows
+            // what to change before the first commit.
+            let findings = run_check(&bench, &project)?;
+            let (errors, warnings) = check::counts(&findings);
+            let failing: Vec<&Finding> = findings
+                .iter()
+                .filter(|f| f.severity == Severity::Error)
+                .collect();
+            text.push(String::new());
+            text.push(format!(
+                "`jig check` on the repository{}: {errors} errors, {warnings} warnings",
+                if dry_run { " as it stands" } else { "" }
+            ));
+            text.extend(
+                failing
+                    .iter()
+                    .map(|f| format!("  {}:{}: [{}] {}", f.file, f.line, f.rule, f.message)),
+            );
+            if errors > 0 {
+                text.push(
+                    "The pre-commit hook refuses these errors: fix them, or list third-party paths with --exclude."
+                        .to_string(),
+                );
+            }
+            value["check"] = serde_json::json!({
+                "errors": errors,
+                "warnings": warnings,
+                "findings": failing,
+            });
+            report(json, value, &text.join("\n"))?;
+            Ok(ExitCode::SUCCESS)
         }
         Command::Status { all } => match Project::discover(&cwd) {
             Ok(project) if !all => project_status(&bench, &project, json),
@@ -341,39 +376,45 @@ fn setup(name: String, existing: Option<PathBuf>, args: ProjectArgs) -> scaffold
         visibility: args.visibility,
         phase: args.phase,
         remote: args.remote,
+        exclude: args.exclude,
         existing,
     }
 }
 
-fn apply(bench: &Bench, plan: scaffold::Plan, dry_run: bool, json: bool) -> Result<ExitCode> {
+/// Applies a plan, or lists it for a dry run. Returns the result as JSON and
+/// as lines of text.
+fn execute(
+    bench: &Bench,
+    plan: scaffold::Plan,
+    dry_run: bool,
+) -> Result<(serde_json::Value, Vec<String>)> {
     if dry_run {
         let lines = plan.describe(bench);
-        if json {
-            println!(
-                "{}",
-                serde_json::to_string_pretty(
-                    &serde_json::json!({ "dry_run": true, "actions": lines })
-                )?
-            );
-        } else {
-            println!("Would:");
-            for line in lines {
-                println!("  {line}");
-            }
-        }
-        return Ok(ExitCode::SUCCESS);
+        let mut text = vec!["Would:".to_string()];
+        text.extend(lines.iter().map(|line| format!("  {line}")));
+        return Ok((
+            serde_json::json!({ "dry_run": true, "actions": lines }),
+            text,
+        ));
     }
     let applied = plan.apply(bench)?;
-    if json {
-        println!("{}", serde_json::to_string_pretty(&applied)?);
-    } else {
-        for line in &applied.done {
-            println!("  {line}");
-        }
-        for line in &applied.skipped {
-            println!("  skipped (already there): {line}");
-        }
-    }
+    let mut text: Vec<String> = applied
+        .done
+        .iter()
+        .map(|line| format!("  {line}"))
+        .collect();
+    text.extend(
+        applied
+            .skipped
+            .iter()
+            .map(|line| format!("  skipped (already there): {line}")),
+    );
+    Ok((serde_json::to_value(&applied)?, text))
+}
+
+fn apply(bench: &Bench, plan: scaffold::Plan, dry_run: bool, json: bool) -> Result<ExitCode> {
+    let (value, text) = execute(bench, plan, dry_run)?;
+    report(json, value, &text.join("\n"))?;
     Ok(ExitCode::SUCCESS)
 }
 

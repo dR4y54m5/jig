@@ -67,6 +67,26 @@ fn tick_all(record: &Path) {
     fs::write(record, read(record).replace("- [ ]", "- [x]")).unwrap();
 }
 
+/// Runs `jig check --json` and returns each finding as (file, rule, severity).
+fn check_findings(bench: &Bench, root: &Path) -> Vec<(String, String, String)> {
+    let output = bench
+        .jig(root)
+        .args(["check", "--json"])
+        .output()
+        .unwrap()
+        .stdout;
+    let findings: serde_json::Value = serde_json::from_slice(&output).unwrap();
+    findings
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|f| {
+            let field = |name: &str| f[name].as_str().unwrap().to_string();
+            (field("file"), field("rule"), field("severity"))
+        })
+        .collect()
+}
+
 fn in_phase(root: &Path, phase: &str) -> bool {
     read(&root.join("project.toml")).contains(&format!("phase = \"{phase}\""))
 }
@@ -358,6 +378,138 @@ fn quoted_phrases_in_code_spans_are_not_teaching() {
 }
 
 #[test]
+fn check_finds_private_references_in_every_text_file() {
+    let bench = Bench::new();
+    let root = bench.project("demo", &SOFTWARE);
+    fs::write(
+        bench.root.join("vault/jig.toml"),
+        "private_terms = [\"secret-notes\"]\n",
+    )
+    .unwrap();
+    fs::create_dir_all(root.join("src")).unwrap();
+    // Built from parts, so that this file holds no home path of its own.
+    let home_path = ["", "Users", "someone", "plans"].join("/");
+    fs::write(
+        root.join("src/main.rs"),
+        format!("// see secret-notes\nconst PLANS: &str = \"{home_path}\";\n"),
+    )
+    .unwrap();
+    fs::write(
+        root.join("settings.toml"),
+        format!(
+            "notes = \"{}\"\n",
+            bench.root.join("vault/projects/demo").display()
+        ),
+    )
+    .unwrap();
+    fs::write(root.join("logo.bin"), [0u8, 159, 146, 150]).unwrap();
+
+    let private: Vec<String> = check_findings(&bench, &root)
+        .into_iter()
+        .filter(|(_, rule, severity)| rule == "separation.private-reference" && severity == "error")
+        .map(|(file, _, _)| file)
+        .collect();
+    assert_eq!(
+        private,
+        ["settings.toml", "src/main.rs", "src/main.rs"],
+        "the vault path, a private term and a home path, none of them in Markdown"
+    );
+}
+
+#[test]
+fn check_follows_every_kind_of_link() {
+    let bench = Bench::new();
+    let root = bench.project("demo", &SOFTWARE);
+    let readme = root.join("README.md");
+    let mut text = read(&readme);
+    // A template placeholder elsewhere in the file must not switch the link checks off.
+    text.push_str("\nThe title is filled in from the `{{title}}` placeholder: {{title}}.\n\n");
+    text.push_str(
+        "See [the notes](../../vault/notes.md), [the guide][g] and [the plan](/opt/plans/plan.md).\n",
+    );
+    text.push_str("<a href=\"../../vault/page.html\">A page</a>\n\n[g]: ../../vault/guide.md\n");
+    fs::write(&readme, text).unwrap();
+
+    let outside = check_findings(&bench, &root)
+        .into_iter()
+        .filter(|(file, rule, severity)| {
+            file == "README.md" && rule == "separation.private-reference" && severity == "error"
+        })
+        .count();
+    assert_eq!(
+        outside, 4,
+        "an inline link, an absolute path, an HTML attribute and a reference definition"
+    );
+}
+
+#[test]
+fn check_skips_ignored_and_excluded_files() {
+    let bench = Bench::new();
+    let root = bench.project("demo", &SOFTWARE);
+    let ignore = root.join(".gitignore");
+    fs::write(&ignore, read(&ignore) + "deps/\n").unwrap();
+    for dir in ["deps/lib", "vendor/lib"] {
+        fs::create_dir_all(root.join(dir)).unwrap();
+        fs::write(root.join(dir).join("README.md"), "Now let's begin.\n").unwrap();
+    }
+    let teaching: Vec<String> = check_findings(&bench, &root)
+        .into_iter()
+        .filter(|(_, rule, _)| rule == "separation.teaching")
+        .map(|(file, _, _)| file)
+        .collect();
+    assert_eq!(
+        teaching,
+        ["vendor/lib/README.md"],
+        "a file that git ignores is not checked"
+    );
+
+    let config = root.join("project.toml");
+    fs::write(
+        &config,
+        read(&config) + "\n[check]\nexclude = [\"vendor\"]\n",
+    )
+    .unwrap();
+    bench.jig(&root).arg("check").assert().success();
+}
+
+#[test]
+fn adoption_reports_what_the_existing_files_fail() {
+    let bench = Bench::new();
+    let repo = bench.root.join("projects/old");
+    fs::create_dir_all(repo.join("docs")).unwrap();
+    fs::write(repo.join("README.md"), "# Old\n\nNow let's begin.\n").unwrap();
+    fs::write(repo.join("docs/setup.md"), "# Setup\n").unwrap();
+    let adopt = |extra: &[&str]| {
+        let output = bench
+            .jig(&bench.root)
+            .arg("adopt")
+            .arg(&repo)
+            .args([
+                "--kind", "software", "--code", "OLD", "--title", "Old tool", "--json",
+            ])
+            .args(extra)
+            .output()
+            .unwrap();
+        assert!(output.status.success());
+        parse_json(&output.stdout, "adopt")
+    };
+
+    let planned = adopt(&["--dry-run"]);
+    assert_eq!(planned["check"]["errors"], 2);
+    assert!(!repo.join("project.toml").exists());
+
+    let applied = adopt(&[]);
+    assert_eq!(applied["check"]["errors"], 2);
+    let rules: Vec<&str> = applied["check"]["findings"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|f| f["rule"].as_str().unwrap())
+        .collect();
+    assert!(rules.contains(&"separation.teaching") && rules.contains(&"front-matter.missing"));
+}
+
+#[test]
 fn release_is_refused_while_template_guidance_remains() {
     let bench = Bench::new();
     let root = bench.project("demo", &PRODUCT);
@@ -504,7 +656,7 @@ fn check_enforces_requirement_rules() {
     let text = fs::read_to_string(&srs).unwrap().replace(
         "The system shall respond.\n\n- **Verification:** Test\n",
         "The system needs to respond quickly.\n\n",
-    );
+    ) + "\n### REQ-002 Start and stop\n\nThe system shall start and shall stop.\n\n- **Verification:** Test\n";
     fs::write(&srs, text).unwrap();
     let vvp = root.join("docs/vv-plan.md");
     fs::write(
@@ -539,6 +691,14 @@ fn check_enforces_requirement_rules() {
     ] {
         assert!(rules.contains(&rule), "{rule} is reported");
     }
+    assert!(
+        check_findings(&bench, &root).contains(&(
+            "docs/requirements.md".to_string(),
+            "requirement.not-singular".to_string(),
+            "error".to_string()
+        )),
+        "a statement with two `shall`s is an error"
+    );
 }
 
 fn tools_available() -> bool {

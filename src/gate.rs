@@ -208,19 +208,26 @@ pub fn readiness(
     for check in &phase.checks {
         let item = match check.as_str() {
             "requirements-well-formed" => {
-                let bad = findings
-                    .iter()
-                    .filter(|f| {
-                        f.severity == Severity::Error
-                            && (f.rule.starts_with("requirement.") || f.rule.starts_with("test."))
-                    })
-                    .count();
+                let count = |severity: Severity| {
+                    findings
+                        .iter()
+                        .filter(|f| {
+                            f.severity == severity
+                                && (f.rule.starts_with("requirement.")
+                                    || f.rule.starts_with("test."))
+                        })
+                        .count()
+                };
+                let (bad, warnings) = (count(Severity::Error), count(Severity::Warning));
                 let has_reqs = !matrix.rows.is_empty();
                 CheckItem {
                     name: "requirements are well formed".into(),
                     ok: bad == 0 && has_reqs,
                     detail: if has_reqs {
-                        format!("{} requirements, {bad} errors", matrix.rows.len())
+                        format!(
+                            "{} requirements, {bad} errors, {warnings} warnings",
+                            matrix.rows.len()
+                        )
                     } else {
                         "no requirements found".into()
                     },

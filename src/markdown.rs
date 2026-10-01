@@ -11,6 +11,11 @@ static LINK: LazyLock<Regex> =
 static HEADING: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^(#{1,6})\s+(.*?)\s*#*\s*$").unwrap());
 static INLINE_CODE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"`+[^`]*`+").unwrap());
+/// A reference definition, `[label]: target`. Footnotes, `[^1]: text`, are not links.
+static REFERENCE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^ {0,3}\[[^\]^][^\]]*\]:\s*<?([^\s>]+)>?").unwrap());
+static HTML_TARGET: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r#"(?i)\b(?:href|src)\s*=\s*["']([^"']+)["']"#).unwrap());
 
 #[derive(Debug, Clone)]
 pub struct Line<'a> {
@@ -213,6 +218,19 @@ pub fn links(text: &str) -> Vec<Link> {
         .collect()
 }
 
+/// Every link target on a line of prose: inline links and images, a reference
+/// definition, and the `href` and `src` attributes of inline HTML. Code spans
+/// are skipped, so link syntax can be quoted.
+pub fn link_targets(text: &str) -> Vec<String> {
+    let text = without_code_spans(text);
+    let mut out: Vec<String> = links(&text).into_iter().map(|link| link.target).collect();
+    if let Some(caps) = REFERENCE.captures(&text) {
+        out.push(caps[1].to_string());
+    }
+    out.extend(HTML_TARGET.captures_iter(&text).map(|c| c[1].to_string()));
+    out
+}
+
 /// Rewrites link targets outside code blocks. `rewrite` returns the new
 /// target, or `None` to leave the link unchanged.
 pub fn rewrite_links(body: &str, rewrite: impl Fn(&Link) -> Option<String>) -> String {
@@ -303,6 +321,22 @@ mod tests {
         assert_eq!(found.len(), 2);
         assert!(!found[0].image && found[1].image);
         assert_eq!(found[1].target, "b.svg");
+    }
+
+    #[test]
+    fn link_targets_cover_inline_reference_and_html_links() {
+        assert_eq!(
+            link_targets("See [a](a.md), <img src='b.svg'> and <a href=\"c.html\">c</a>."),
+            ["a.md", "b.svg", "c.html"]
+        );
+        assert_eq!(
+            link_targets("[guide]: ../guide.md \"Title\""),
+            ["../guide.md"]
+        );
+        assert_eq!(link_targets("   [g]: <../guide.md>"), ["../guide.md"]);
+        assert!(link_targets("[^1]: A footnote, not a link.").is_empty());
+        assert!(link_targets("Quoted syntax: `[a](a.md)` and `[g]: g.md`.").is_empty());
+        assert!(link_targets("- [x]: a ticked item").is_empty());
     }
 
     #[test]

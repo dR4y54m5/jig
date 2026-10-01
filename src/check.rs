@@ -98,6 +98,20 @@ static VAGUE: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(&format!(r"(?i)\b(?:{})\b", escaped.join("|"))).unwrap()
 });
 static SHALL: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?i)\bshall\b").unwrap());
+/// An absolute path under a home directory, on macOS, Linux or Windows. The
+/// character before it must end a word, so the path part of a URL is not one.
+static HOME_PATH: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(
+        r#"(?:^|[\s"'`(=\[<>,;:]|file://)((?:/(?:Users|home)/|[A-Za-z]:\\Users\\)[A-Za-z0-9._-]+)"#,
+    )
+    .unwrap()
+});
+/// A URI scheme at the start of a link target, such as `https:` or `mailto:`.
+static SCHEME: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^([A-Za-z][A-Za-z0-9+.-]*):").unwrap());
+
+/// Files larger than this are not searched for private references.
+const MAX_SCANNED_BYTES: usize = 4 * 1024 * 1024;
 
 pub struct Checker<'a> {
     project: &'a Project,
@@ -132,8 +146,12 @@ pub fn check(
         findings: Vec::new(),
     };
     let docs = docs::load_all(&project.root)?;
-    for path in docs::markdown_files(&project.root) {
-        let doc = Doc::load(&project.root, &path)?;
+    let files = docs::project_files(&project.root, |rel| project.check.excludes(rel));
+    for path in files
+        .iter()
+        .filter(|path| path.extension().is_some_and(|x| x == "md"))
+    {
+        let doc = Doc::load(&project.root, path)?;
         let in_docs = doc.rel.starts_with(&format!("{}/", docs::DOCS_DIR));
         checker.separation(&doc, in_docs);
         checker.links(&doc);
@@ -143,6 +161,7 @@ pub fn check(
             checker.guide_comments(&doc);
         }
     }
+    checker.private_references(&files);
     checker.unique_ids(&docs);
     checker.requirements(&docs);
     checker.test_cases(&docs);
@@ -323,16 +342,54 @@ impl Checker<'_> {
                 );
             }
         }
-        // Private references are checked everywhere, including code blocks and comments.
-        for (i, line) in doc.text.lines().enumerate() {
-            for private in &self.private_paths {
-                if line.to_lowercase().contains(&private.to_lowercase()) {
+    }
+
+    /// Private references in every text file, of any type and including code
+    /// blocks and comments: the vault's path, the private terms, and absolute
+    /// paths under a home directory.
+    fn private_references(&mut self, files: &[std::path::PathBuf]) {
+        let private: Vec<(String, String)> = self
+            .private_paths
+            .iter()
+            .map(|term| (term.clone(), term.to_lowercase()))
+            .collect();
+        for path in files {
+            let Ok(bytes) = std::fs::read(path) else {
+                continue;
+            };
+            if bytes.len() > MAX_SCANNED_BYTES || bytes.contains(&0) {
+                continue;
+            }
+            let Ok(text) = String::from_utf8(bytes) else {
+                continue;
+            };
+            let file = path
+                .strip_prefix(&self.project.root)
+                .unwrap_or(path)
+                .to_string_lossy()
+                .replace('\\', "/");
+            for (i, line) in text.lines().enumerate() {
+                let lower = line.to_lowercase();
+                let mut messages: Vec<String> = private
+                    .iter()
+                    .filter(|(_, needle)| lower.contains(needle))
+                    .map(|(term, _)| format!("mentions `{term}`, which is private"))
+                    .collect();
+                if messages.is_empty()
+                    && let Some(caps) = HOME_PATH.captures(line)
+                {
+                    messages.push(format!(
+                        "absolute home path `{}`; a path on one machine does not belong in a repository",
+                        &caps[1]
+                    ));
+                }
+                for message in messages {
                     self.findings.push(Finding {
                         severity: Severity::Error,
                         rule: "separation.private-reference",
-                        file: doc.rel.clone(),
+                        file: file.clone(),
                         line: i + 1,
-                        message: format!("mentions `{private}`, which is private"),
+                        message,
                     });
                 }
             }
@@ -340,10 +397,10 @@ impl Checker<'_> {
     }
 
     fn links(&mut self, doc: &Doc) {
-        // Templates link to files that exist only in the projects made from them.
-        if doc.text.contains("{{") {
-            return;
-        }
+        // A file with `{{placeholders}}` is a template: its relative links
+        // point at files that exist only in the projects made from it, so a
+        // missing target is not reported. Links that leave the repository are.
+        let template = doc.text.contains("{{");
         let dir = Path::new(&doc.rel)
             .parent()
             .unwrap_or(Path::new(""))
@@ -352,13 +409,17 @@ impl Checker<'_> {
             if line.code {
                 continue;
             }
-            for link in markdown::links(line.text) {
-                let target = link.target.split('#').next().unwrap_or("");
-                if target.is_empty() || target.contains("://") || target.starts_with("mailto:") {
+            for link in markdown::link_targets(line.text) {
+                let target = link.split('#').next().unwrap_or("");
+                if target.is_empty() {
                     continue;
                 }
-                if target.starts_with('/') || target.starts_with('~') || target.starts_with("file:")
-                {
+                let absolute = match SCHEME.captures(target) {
+                    // `file:` names a local path, and a one-letter scheme is a Windows drive.
+                    Some(caps) => caps[1].eq_ignore_ascii_case("file") || caps[1].len() == 1,
+                    None => target.starts_with('/') || target.starts_with('~'),
+                };
+                if absolute {
                     self.add(
                         Severity::Error,
                         "separation.private-reference",
@@ -366,6 +427,9 @@ impl Checker<'_> {
                         line.no,
                         format!("link to an absolute path `{target}`"),
                     );
+                    continue;
+                }
+                if SCHEME.is_match(target) || target.contains("{{") {
                     continue;
                 }
                 match docs::normalize(&dir.join(target)) {
@@ -377,7 +441,7 @@ impl Checker<'_> {
                         format!("link `{target}` leads outside the repository"),
                     ),
                     Some(resolved) => {
-                        if !self.project.root.join(&resolved).exists() {
+                        if !template && !self.project.root.join(&resolved).exists() {
                             self.add(
                                 Severity::Warning,
                                 "link.broken",
@@ -472,7 +536,7 @@ impl Checker<'_> {
                     );
                 } else if shalls > 1 {
                     self.add(
-                        Severity::Warning,
+                        Severity::Error,
                         "requirement.not-singular",
                         doc,
                         req.line,
@@ -637,6 +701,18 @@ mod tests {
         assert!(!TEACHING.is_match("The outlet shall supply 5 V."));
         assert!(!TEACHING.is_match("Squizzed"));
         assert!(TEACHING_SOFT.is_match("Try it: cargo run"));
+    }
+
+    #[test]
+    fn home_paths_are_detected_but_urls_are_not() {
+        // Built from parts, so that this file holds no home path of its own.
+        let mac = ["", "Users", "someone", "notes"].join("/");
+        let linux = ["", "home", "someone", ".config"].join("/");
+        assert!(HOME_PATH.is_match(&format!("see {mac}")));
+        assert!(HOME_PATH.is_match(&format!("PATH=/usr/bin:{linux}/bin")));
+        assert!(HOME_PATH.is_match(&format!("file://{mac}")));
+        assert!(!HOME_PATH.is_match(&format!("https://example.com{linux}")));
+        assert!(!HOME_PATH.is_match("the /Users/ directory on macOS"));
     }
 
     #[test]

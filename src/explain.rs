@@ -199,13 +199,17 @@ belongs to the vault.
 References run one way: vault documents may cite project documents by ID;
 project documents never mention the vault, its paths or its contents.
 
-`jig check` enforces this in every Markdown file of a project repository:
-  error    teaching phrases: {}
-  warning  teaching words: {}
+`jig check` enforces this on the files git tracks or would add, minus the
+paths under `[check] exclude` in project.toml:
+  error    teaching phrases in Markdown: {}
+  warning  teaching words in Markdown: {}
   warning  second person (you, your) in engineering documents under docs/
-  error    mentions of the vault's path or of a private term listed in the
-           vault's jig.toml, absolute paths, and links that leave the repository
-Text in code spans and HTML comments is ignored, so phrases can be quoted in backticks.",
+  error    in any text file: the vault's path, a private term listed in the
+           vault's jig.toml, or an absolute path under a home directory
+  error    in Markdown: a link to an absolute path or out of the repository
+           (inline, reference definition, or HTML href and src)
+Teaching phrases in code blocks, code spans and HTML comments are ignored, so
+they can be quoted in backticks. Private references are reported everywhere.",
         TEACHING_PHRASES
             .join(", ")
             .replace("(?:'|’)", "'")

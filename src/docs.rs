@@ -126,18 +126,64 @@ pub fn load_all(root: &Path) -> Result<Vec<Doc>> {
     Ok(docs)
 }
 
-/// Every Markdown file in a repository, skipping hidden directories and build output.
-pub fn markdown_files(root: &Path) -> Vec<PathBuf> {
+/// The files `jig check` looks at, sorted by path. In a git repository these
+/// are the files git tracks or would add, so whatever git ignores is skipped;
+/// elsewhere, every file outside hidden directories and build output.
+/// `excluded` drops further paths, given relative to `root`.
+pub fn project_files(root: &Path, excluded: impl Fn(&str) -> bool) -> Vec<PathBuf> {
+    let mut paths = git_files(root).unwrap_or_else(|| walked_files(root));
+    paths.sort();
+    paths.dedup();
+    paths
+        .into_iter()
+        .filter(|rel| !excluded(rel))
+        .map(|rel| root.join(rel))
+        .filter(|path| path.is_file())
+        .collect()
+}
+
+/// Paths relative to `root` of the files git tracks or would add, or `None`
+/// when `root` is not in a git repository.
+fn git_files(root: &Path) -> Option<Vec<String>> {
+    let output = Command::new("git")
+        .arg("-C")
+        .arg(root)
+        .args([
+            "ls-files",
+            "-z",
+            "--cached",
+            "--others",
+            "--exclude-standard",
+        ])
+        .output()
+        .ok()?;
+    if !output.status.success() {
+        return None;
+    }
+    Some(
+        output
+            .stdout
+            .split(|byte| *byte == 0)
+            .filter(|path| !path.is_empty())
+            .map(|path| String::from_utf8_lossy(path).into_owned())
+            .collect(),
+    )
+}
+
+/// Paths relative to `root` of every file outside hidden directories and build output.
+fn walked_files(root: &Path) -> Vec<String> {
     WalkDir::new(root)
-        .sort_by_file_name()
         .into_iter()
         .filter_entry(|e| {
             let name = e.file_name().to_string_lossy();
             e.depth() == 0 || !(name.starts_with('.') || name == "target" || name == "node_modules")
         })
         .filter_map(|e| e.ok())
-        .filter(|e| e.file_type().is_file() && e.path().extension().is_some_and(|x| x == "md"))
-        .map(|e| e.into_path())
+        .filter(|e| e.file_type().is_file())
+        .filter_map(|e| {
+            let rel = e.path().strip_prefix(root).ok()?;
+            Some(rel.to_string_lossy().replace('\\', "/"))
+        })
         .collect()
 }
 
