@@ -3,7 +3,7 @@ id: JIG-PLN
 title: Project plan
 kind: pln
 revision: C
-status: draft
+status: released
 date: 2026-10-01
 author: dR4y54m5
 gate: CR
@@ -66,3 +66,4 @@ Documents, source code and design files are version-controlled in this repositor
 |---|---|---|---|
 | A | 2026-09-30 | Initial baseline | dR4y54m5 |
 | B | 2026-10-01 | Test procedures: each test case is a cargo test command or an inspection or demonstration stated in the test case | dR4y54m5 |
+| C | 2026-10-01 | Tailoring: continuous integration runs the automated tests; inspections and demonstrations stay on the development machine | dR4y54m5 |

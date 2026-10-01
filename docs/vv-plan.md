@@ -3,7 +3,7 @@ id: JIG-VVP
 title: Verification and validation plan
 kind: vvp
 revision: E
-status: draft
+status: released
 date: 2026-10-01
 author: dR4y54m5
 gate: TRR
@@ -318,3 +318,4 @@ Continuous integration runs `cargo test` and `jig check` on every push to `main`
 | B | 2026-09-30 | TC-005: pass both test filters after -- | dR4y54m5 |
 | C | 2026-09-30 | TC-012 covers every command; add TC-018 and TC-019 | dR4y54m5 |
 | D | 2026-10-01 | Add TC-020 to TC-031; TC-015 and TC-016 automated; TC-018 and the pass criteria of earlier cases revised; validation rows for N-04, N-07 and N-08 | dR4y54m5 |
+| E | 2026-10-01 | Add TC-032; continuous integration in the strategy and the environments | dR4y54m5 |

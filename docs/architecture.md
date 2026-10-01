@@ -3,7 +3,7 @@ id: JIG-ARC
 title: Architecture description
 kind: arc
 revision: D
-status: draft
+status: released
 date: 2026-10-01
 author: dR4y54m5
 gate: DR
@@ -174,3 +174,4 @@ Measured with the release build on an Apple M4 on 2026-10-01. The check runs git
 | A | 2026-09-30 | Initial baseline | dR4y54m5 |
 | B | 2026-09-30 | Agent context strategy; REQ-025 to REQ-028 allocated to scaffold | dR4y54m5 |
 | C | 2026-10-01 | Allocate REQ-029 to REQ-050; add the main and templates modules; agent files, checked files and refusals in the design principles; measured times updated | dR4y54m5 |
+| D | 2026-10-01 | Allocate REQ-051 to the continuous integration workflow | dR4y54m5 |

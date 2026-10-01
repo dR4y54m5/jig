@@ -3,7 +3,7 @@ id: JIG-TR-004
 title: Verification of continuous integration
 kind: tr
 revision: A
-status: draft
+status: released
 date: 2026-10-01
 author: dR4y54m5
 gate: RRR
@@ -54,3 +54,4 @@ TC-032 passes, and REQ-051 is verified by demonstration. With the results of JIG
 
 | Rev | Date | Description | Author |
 |---|---|---|---|
+| A | 2026-10-01 | Demonstration of TC-032: the first runs of the continuous integration workflow | dR4y54m5 |
