@@ -43,7 +43,7 @@ Every automated test runs with `cargo test`. The PDF test renders only when Pand
 - **Method:** Test
 - **Level:** System
 - **Procedure:** `cargo test --test cli a_new_product_walks_through_its_first_gate`
-- **Pass criteria:** The test passes: the project, vault folder, workspace and hook exist, readiness fails before release, and a go moves the project to P1 with its SRS drafted.
+- **Pass criteria:** The test passes: the project, vault folder, workspace, hook and registry entry exist; readiness names each required document, check and criterion with its state, and fails before release; a go moves the project to P1 with its SRS drafted.
 
 ### TC-002 Adoption leaves existing files unchanged
 
@@ -131,7 +131,7 @@ Every automated test runs with `cargo test`. The PDF test renders only when Pand
 - **Method:** Test
 - **Level:** System
 - **Procedure:** `cargo test --test cli every_command_prints_json`
-- **Pass criteria:** The test passes: the output of every command run with `--json` parses as one JSON document.
+- **Pass criteria:** The test passes: the output of every command run with `--json` parses as one JSON document, `adopt`, `gate close`, `phase next` and `explain` with a topic included.
 
 ### TC-013 No command reads standard input
 
@@ -154,16 +154,16 @@ Every automated test runs with `cargo test`. The PDF test renders only when Pand
 - **Verifies:** REQ-022
 - **Method:** Test
 - **Level:** System
-- **Procedure:** Create a software project at P3 with 44 decision records (50 documents), then time 100 runs of `jig check --quiet` with the release build.
-- **Pass criteria:** The mean run time is under 1 s.
+- **Procedure:** `cargo test --test cli check_stays_within_its_time_budget`
+- **Pass criteria:** The test passes: on a software project at P3 with 44 decision records (50 documents), the mean of five runs of `jig check --quiet` with the test build is under 1 s.
 
 ### TC-016 Package time on 10 documents
 
 - **Verifies:** REQ-023
 - **Method:** Test
 - **Level:** System
-- **Procedure:** Create a software project at P1 with 5 decision records (10 documents), then time three runs of `jig doc pack SRR` with the release build.
-- **Pass criteria:** Every run completes in under 5 s.
+- **Procedure:** `cargo test --test cli a_gate_package_stays_within_its_time_budget`
+- **Pass criteria:** The test passes: on a software project at P1 with 5 decision records (10 documents), each of three runs of `jig doc pack SRR` with the test build takes under 5 s. The test reports that it skipped when Pandoc or Typst is missing.
 
 ### TC-017 External programs
 

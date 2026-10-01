@@ -148,9 +148,44 @@ fn a_new_product_walks_through_its_first_gate() {
             .exists()
     );
     assert!(root.join(".git/hooks/pre-commit").exists());
+    let registry = read(&bench.root.join("vault/registry.toml"));
+    assert!(registry.contains("name = \"demo\"") && registry.contains("path = \"projects/demo\""));
 
     bench.jig(&root).arg("check").assert().success();
-    bench.jig(&root).args(["gate", "check"]).assert().code(1);
+
+    // Readiness names each document, check and criterion with its state.
+    let output = bench
+        .jig(&root)
+        .args(["gate", "check", "--json"])
+        .assert()
+        .code(1)
+        .get_output()
+        .stdout
+        .clone();
+    let readiness = parse_json(&output, "gate check");
+    assert_eq!(readiness["gate"], "CR");
+    let checks: Vec<(&str, bool)> = readiness["checks"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|c| (c["name"].as_str().unwrap(), c["ok"].as_bool().unwrap()))
+        .collect();
+    assert_eq!(
+        checks,
+        [
+            ("project plan released", false),
+            ("concept brief released", false),
+            ("risk register exists", true),
+            ("`jig check` reports no errors", true),
+        ]
+    );
+    let criteria = readiness["criteria"].as_array().unwrap();
+    assert_eq!(
+        criteria.len(),
+        5,
+        "the desk-tier product criteria of the CR"
+    );
+    assert!(criteria.iter().all(|c| c["checked"] == false));
 
     for doc in ["docs/plan.md", "docs/concept.md", "docs/risks.md"] {
         strip_guidance(&root.join(doc));
@@ -974,6 +1009,82 @@ fn templates_hold_guidance_and_no_sample_content() {
         .args(["doc", "release", "DM-SPC-001", "--note", "Too early"])
         .assert()
         .code(2);
+}
+
+fn seconds(run: impl FnOnce()) -> f64 {
+    let start = std::time::Instant::now();
+    run();
+    start.elapsed().as_secs_f64()
+}
+
+/// A software project in `phase` holding `records` decision records.
+fn project_with_decisions(bench: &Bench, phase: &str, records: usize) -> PathBuf {
+    let root = bench.project(
+        "perf",
+        &[
+            "--kind", "software", "--code", "PF", "--title", "Timing", "--phase", phase,
+        ],
+    );
+    for n in 1..=records {
+        bench
+            .jig(&root)
+            .args([
+                "doc",
+                "new",
+                "adr",
+                "--title",
+                &format!("Decision number {n}"),
+            ])
+            .assert()
+            .success();
+    }
+    root
+}
+
+#[test]
+fn check_stays_within_its_time_budget() {
+    let bench = Bench::new();
+    let root = project_with_decisions(&bench, "P3", 44);
+    let listed = bench.jig(&root).args(["doc", "list"]).output().unwrap();
+    assert_eq!(
+        String::from_utf8_lossy(&listed.stdout).lines().count(),
+        50,
+        "six phase documents and 44 decision records"
+    );
+    let check = || {
+        bench
+            .jig(&root)
+            .args(["check", "--quiet"])
+            .assert()
+            .success();
+    };
+    check();
+    let runs = 5;
+    let mean = (0..runs).map(|_| seconds(check)).sum::<f64>() / f64::from(runs);
+    assert!(mean < 1.0, "`jig check` took {mean:.3} s on 50 documents");
+}
+
+#[test]
+fn a_gate_package_stays_within_its_time_budget() {
+    if !tools_available() {
+        eprintln!("skipped: pandoc and typst are not installed");
+        return;
+    }
+    let bench = Bench::new();
+    let root = project_with_decisions(&bench, "P1", 5);
+    let pack = || {
+        bench
+            .jig(&root)
+            .args(["doc", "pack", "SRR"])
+            .assert()
+            .success();
+    };
+    pack();
+    let slowest = (0..3).map(|_| seconds(pack)).fold(0.0, f64::max);
+    assert!(
+        slowest < 5.0,
+        "`jig doc pack` took {slowest:.2} s on 10 documents"
+    );
 }
 
 fn tools_available() -> bool {
