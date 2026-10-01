@@ -1,0 +1,166 @@
+kind = "product"
+title = "Hardware product"
+description = "A physical product with electronics, firmware and an enclosure, taken from concept through validation, and to production from the batch tier up."
+tiers = ["desk", "batch", "retail"]
+
+[[phase]]
+id = "P0"
+name = "Concept"
+gate = "CR"
+gate_title = "Concept Review"
+question = "Is the project worth doing, and is it clear what done looks like?"
+equivalent = "NASA Pre-Phase A (Mission Concept Review); Stage-Gate gates 1-2"
+require = [
+  { kind = "pln", state = "released" },
+  { kind = "con", state = "released" },
+  { kind = "rsk", state = "exists" },
+]
+criteria = [
+  "The problem, the intended users and their needs are stated.",
+  "Non-goals and the product tier are recorded.",
+  "Target cost, size and schedule are stated.",
+  "Existing alternatives are surveyed and the reason to build is recorded.",
+  "The top risks are ranked, and each has a planned spike or mitigation.",
+]
+
+[[phase]]
+id = "P1"
+name = "Definition"
+gate = "SRR"
+gate_title = "System Requirements Review"
+question = "Are the requirements complete and verifiable, and can the riskiest parts work?"
+equivalent = "NASA Phase A (System Requirements Review); Stage-Gate gate 3"
+require = [
+  { kind = "srs", state = "released" },
+  { kind = "vvp", state = "exists" },
+  { kind = "rsk", state = "exists" },
+]
+checks = ["requirements-well-formed"]
+criteria = [
+  "Every stakeholder need traces to at least one requirement.",
+  "Every requirement is necessary, singular, unambiguous and has a verification method.",
+  "The top risks are retired by spikes or have credible mitigations.",
+  "Key technology choices are recorded as decision records.",
+  "The verification approach is outlined in the V&V plan.",
+]
+
+[[phase]]
+id = "P2"
+name = "Preliminary design"
+gate = "PDR"
+gate_title = "Preliminary Design Review"
+question = "Does the architecture meet every requirement with margin, shown by a works-like prototype?"
+equivalent = "NASA Phase B (Preliminary Design Review)"
+require = [
+  { kind = "arc", state = "released" },
+  { kind = "icd", state = "released", min_tier = "batch" },
+  { kind = "fmea", state = "exists", min_tier = "batch" },
+  { kind = "vvp", state = "exists" },
+  { kind = "rsk", state = "exists" },
+]
+checks = ["requirements-well-formed"]
+criteria = [
+  "Every requirement is allocated to a building block.",
+  "Power, cost, memory and timing budgets show margin.",
+  "A works-like prototype demonstrates the end-to-end function.",
+  "Interfaces are defined well enough to design each block independently.",
+  { text = "The design FMEA covers every building block.", min_tier = "batch" },
+]
+
+[[phase]]
+id = "P3"
+name = "Detailed design"
+gate = "CDR"
+gate_title = "Critical Design Review"
+question = "Is the design complete and reviewed, and ready to fabricate?"
+equivalent = "NASA Phase C (Critical Design Review)"
+require = [
+  { kind = "srs", state = "released" },
+  { kind = "arc", state = "released" },
+  { kind = "icd", state = "released", min_tier = "batch" },
+  { kind = "fmea", state = "released", min_tier = "batch" },
+  { kind = "vvp", state = "released" },
+  { kind = "tp", state = "exists" },
+]
+checks = ["requirements-well-formed", "rtm-planned"]
+criteria = [
+  "The schematic and layout are complete and have passed ERC, DRC and a checklist review.",
+  "The fabrication package is generated from the design source.",
+  "The bring-up procedure is written.",
+  "The enclosure design fits the board, battery and connectors.",
+  "Every requirement has at least one planned test case.",
+]
+
+[[phase]]
+id = "P4"
+name = "Engineering validation (EVT)"
+gate = "EVT"
+gate_title = "Engineering Validation Test exit"
+question = "Does the built design work?"
+equivalent = "EVT; NASA Phase D (integration)"
+require = [
+  { kind = "tp", state = "released" },
+  { kind = "tr", state = "released" },
+]
+checks = ["rtm-planned"]
+criteria = [
+  "The first boards are brought up and every subsystem works.",
+  "Integration tests have run and their results are recorded in a test report.",
+  "Defects are recorded as errata, with changes planned for the next revision.",
+  "Firmware runs the full feature path on the target hardware.",
+]
+
+[[phase]]
+id = "P5"
+name = "Design validation (DVT)"
+gate = "DVT"
+gate_title = "Design Validation Test exit"
+question = "Does the product meet every requirement in real conditions, and does it satisfy the user?"
+equivalent = "DVT; NASA Phase D (verification and acceptance)"
+require = [
+  { kind = "tr", state = "released" },
+  { kind = "usr", state = "exists", min_tier = "batch" },
+]
+checks = ["rtm-verified"]
+criteria = [
+  "Every requirement is verified by its stated method, with results recorded.",
+  "The product is validated in real use against the concept brief.",
+  "Reliability and environmental testing appropriate to the tier is complete.",
+  "The design is frozen and tagged as a baseline.",
+]
+
+[[phase]]
+id = "P6"
+name = "Production validation (PVT) and release"
+gate = "PRR"
+gate_title = "Production Readiness Review"
+question = "Can the product be built repeatably, and is it compliant?"
+equivalent = "PVT; NASA Production Readiness Review; Stage-Gate gate 5"
+min_tier = "batch"
+require = [
+  { kind = "mfg", state = "released" },
+  { kind = "usr", state = "released" },
+  { kind = "rel", state = "released" },
+  { kind = "cmp", state = "released", min_tier = "retail" },
+]
+criteria = [
+  "Units are built and tested with the manufacturing procedure and test fixture.",
+  "Every component has a source, and critical parts have a second source.",
+  "The firmware update process is proven on production units.",
+  "Packaging and user documentation are final.",
+  { text = "Compliance evidence is complete for every target market.", min_tier = "retail" },
+]
+
+[[phase]]
+id = "P7"
+name = "Sustain and close"
+gate = "CLOSE"
+gate_title = "Closeout Review"
+question = "Is the product working in use, and what did the project learn?"
+equivalent = "NASA Phases E-F"
+require = []
+criteria = [
+  "Field issues are recorded, and each is resolved or dispositioned.",
+  "Lessons learned are recorded.",
+  "Repositories, releases and documents are tagged and archived.",
+]

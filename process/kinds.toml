@@ -1,0 +1,235 @@
+# Document kinds a project repository may contain.
+#
+# key          front-matter `kind` value
+# code         segment in the document ID, e.g. EM4-SRS or EM4-ADR-004
+# type         generic information item type from ISO/IEC/IEEE 15289
+# naming       single   one document at `path`
+#              numbered many documents in `path`, named CODE-NNN-slug.md
+#              gate     one document per gate in `path`, named CODE-GATE.md
+#              date     one document per day in `path`, named YYYY-MM-DD.md
+# procedure    imperative steps are expected (procedures)
+# audience     "engineering" or "end-user"; end-user documents may address the reader
+
+[[kind]]
+key = "pln"
+code = "PLN"
+title = "Project plan"
+type = "plan"
+basis = "ISO/IEC/IEEE 15288 project planning; NASA SEMP, tailored"
+purpose = "Project kind, tier, tailoring decisions, schedule and gate plan."
+naming = "single"
+path = "docs/plan.md"
+
+[[kind]]
+key = "con"
+code = "CON"
+title = "Concept brief"
+type = "description"
+basis = "NASA concept of operations; Stage-Gate business case"
+purpose = "Problem, users, stakeholder needs, operational concept, non-goals and targets."
+naming = "single"
+path = "docs/concept.md"
+
+[[kind]]
+key = "rsk"
+code = "RSK"
+title = "Risk register"
+type = "record"
+basis = "ISO/IEC/IEEE 15288 risk management"
+purpose = "Ranked technical and project risks with likelihood, impact, mitigation and status."
+naming = "single"
+path = "docs/risks.md"
+
+[[kind]]
+key = "srs"
+code = "SRS"
+title = "System requirements specification"
+type = "specification"
+basis = "ISO/IEC/IEEE 29148; INCOSE Guide to Writing Requirements; EARS"
+purpose = "Verifiable system requirements, each with rationale, source and verification method."
+naming = "single"
+path = "docs/requirements.md"
+
+[[kind]]
+key = "spk"
+code = "SPK"
+title = "Spike report"
+type = "report"
+basis = "ISO/IEC/IEEE 15288 system analysis; trade studies"
+purpose = "A timeboxed investigation of one risk or trade-off: question, method, result, decision."
+naming = "numbered"
+path = "docs/spikes"
+
+[[kind]]
+key = "adr"
+code = "ADR"
+title = "Decision record"
+type = "record"
+basis = "MADR 4; ISO/IEC/IEEE 15288 decision management"
+purpose = "One significant decision: context, drivers, options considered, outcome and consequences."
+naming = "numbered"
+path = "docs/decisions"
+
+[[kind]]
+key = "arc"
+code = "ARC"
+title = "Architecture description"
+type = "description"
+basis = "arc42; ISO/IEC/IEEE 42010 viewpoints"
+purpose = "System context, building blocks across electrical, firmware and mechanical views, runtime behaviour and budgets."
+naming = "single"
+path = "docs/architecture.md"
+
+[[kind]]
+key = "icd"
+code = "ICD"
+title = "Interface control document"
+type = "specification"
+basis = "NASA interface control practice"
+purpose = "Every interface: pins, buses, connectors, protocols, electrical levels and timing."
+naming = "single"
+path = "docs/interfaces.md"
+
+[[kind]]
+key = "spc"
+code = "SPC"
+title = "Specification"
+type = "specification"
+basis = "ISO/IEC/IEEE 15289 specification"
+purpose = "A specification other than the system requirements, such as a protocol, file format or process."
+naming = "numbered"
+path = "docs/specs"
+
+[[kind]]
+key = "fmea"
+code = "FMEA"
+title = "Design FMEA"
+type = "report"
+basis = "AIAG & VDA FMEA Handbook (2019), Action Priority"
+purpose = "Failure modes, effects and causes with severity, occurrence, detection and action priority."
+naming = "single"
+path = "docs/dfmea.md"
+
+[[kind]]
+key = "vvp"
+code = "VVP"
+title = "Verification and validation plan"
+type = "plan"
+basis = "ISO/IEC/IEEE 29119-3 test plan; ISO/IEC/IEEE 15288 verification and validation"
+purpose = "Strategy, environments and test cases that verify each requirement and validate the concept."
+naming = "single"
+path = "docs/vv-plan.md"
+
+[[kind]]
+key = "tp"
+code = "TP"
+title = "Test procedure"
+type = "procedure"
+basis = "ISO/IEC/IEEE 29119-3 test procedure specification"
+purpose = "Step-by-step procedure for a test or a board bring-up, with setup, steps and pass criteria."
+naming = "numbered"
+path = "docs/procedures"
+procedure = true
+
+[[kind]]
+key = "tr"
+code = "TR"
+title = "Test report"
+type = "report"
+basis = "ISO/IEC/IEEE 29119-3 test completion report"
+purpose = "Results of executing test cases on a named build, with evidence and anomalies."
+naming = "numbered"
+path = "docs/reports"
+
+[[kind]]
+key = "fnd"
+code = "FND"
+title = "Findings report"
+type = "report"
+basis = "ISO/IEC/IEEE 15289 report"
+purpose = "Reverse-engineering findings: what was measured or captured, and what it shows."
+naming = "numbered"
+path = "docs/findings"
+
+[[kind]]
+key = "err"
+code = "ERR"
+title = "Errata"
+type = "record"
+basis = "Hardware errata practice"
+purpose = "Known defects in one hardware revision, their workarounds and the revision that fixes them."
+naming = "numbered"
+path = "docs/errata"
+
+[[kind]]
+key = "eco"
+code = "ECO"
+title = "Engineering change order"
+type = "request"
+basis = "Configuration management (EIA-649)"
+purpose = "A change to a baselined design: reason, affected items, and disposition."
+naming = "numbered"
+path = "docs/changes"
+
+[[kind]]
+key = "rel"
+code = "REL"
+title = "Release record"
+type = "record"
+basis = "Configuration management (EIA-649)"
+purpose = "The contents of one hardware, firmware or software release, with versions and checksums."
+naming = "numbered"
+path = "docs/releases"
+
+[[kind]]
+key = "gr"
+code = "GR"
+title = "Gate review record"
+type = "record"
+basis = "NPR 7123.1 technical review criteria; Stage-Gate"
+purpose = "Entry criteria, evidence, open actions and the outcome of one gate review."
+naming = "gate"
+path = "docs/reviews"
+
+[[kind]]
+key = "log"
+code = "LOG"
+title = "Engineering notebook"
+type = "record"
+basis = "Engineering notebook practice"
+purpose = "Dated, append-only record of what was tried, observed and concluded."
+naming = "date"
+path = "docs/notebook"
+
+[[kind]]
+key = "mfg"
+code = "MFG"
+title = "Manufacturing and test procedure"
+type = "procedure"
+basis = "Production validation (PVT) practice"
+purpose = "How a unit is assembled, programmed and tested before it ships."
+naming = "single"
+path = "docs/manufacturing.md"
+procedure = true
+
+[[kind]]
+key = "usr"
+code = "USR"
+title = "User guide"
+type = "description"
+basis = "End-user documentation"
+purpose = "How an end user sets up, operates and troubleshoots the product."
+naming = "single"
+path = "docs/user-guide.md"
+procedure = true
+audience = "end-user"
+
+[[kind]]
+key = "cmp"
+code = "CMP"
+title = "Compliance file"
+type = "report"
+basis = "Regulatory compliance (FCC, CE, UN38.3 as applicable)"
+purpose = "Applicable regulations, the evidence for each, and certification status."
+naming = "single"
+path = "docs/compliance.md"

@@ -1,0 +1,53 @@
+kind = "re"
+title = "Reverse engineering"
+description = "Investigating existing hardware or software to document how it works, optionally leading to a product or software project."
+tiers = []
+
+[[phase]]
+id = "P0"
+name = "Scoping"
+gate = "SR"
+gate_title = "Scoping Review"
+question = "Is the target, the goal and the set of legal and safety limits clear?"
+equivalent = "Stage-Gate gates 1-2"
+require = [
+  { kind = "pln", state = "released" },
+  { kind = "con", state = "released" },
+  { kind = "rsk", state = "exists" },
+]
+criteria = [
+  "The target device or system and its revision are identified.",
+  "The goal of the investigation is stated.",
+  "Legal limits (licensing, anti-circumvention) and safety limits (high voltage, safety systems) are recorded.",
+  "The equipment needed is available.",
+]
+
+[[phase]]
+id = "P1"
+name = "Investigation and characterization"
+gate = "FR"
+gate_title = "Findings Review"
+question = "Is the target understood well enough to meet the goal, and is that knowledge reproducible?"
+equivalent = "ISO/IEC/IEEE 15288 system analysis"
+require = [
+  { kind = "fnd", state = "released" },
+  { kind = "icd", state = "released" },
+]
+criteria = [
+  "Each finding states the method used, so it can be reproduced.",
+  "Captures and measurements are archived with the findings.",
+  "The target's interfaces are documented in the interface control document.",
+]
+
+[[phase]]
+id = "P2"
+name = "Close"
+gate = "CLOSE"
+gate_title = "Closeout Review"
+question = "Is the goal met, and is any follow-on project decided?"
+equivalent = "NASA Phase F"
+require = []
+criteria = [
+  "The decision on a follow-on product or software project is recorded.",
+  "Lessons learned are recorded.",
+]

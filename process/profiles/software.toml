@@ -1,0 +1,112 @@
+kind = "software"
+title = "Software"
+description = "An application, library, CLI or service, taken from concept through verified release."
+tiers = []
+
+[[phase]]
+id = "P0"
+name = "Concept"
+gate = "CR"
+gate_title = "Concept Review"
+question = "Is the project worth doing, and is it clear what done looks like?"
+equivalent = "NASA Pre-Phase A (Mission Concept Review); Stage-Gate gates 1-2"
+require = [
+  { kind = "pln", state = "released" },
+  { kind = "con", state = "released" },
+  { kind = "rsk", state = "exists" },
+]
+criteria = [
+  "The problem, the intended users and their needs are stated.",
+  "Non-goals are recorded.",
+  "Existing alternatives are surveyed and the reason to build is recorded.",
+  "The top risks are ranked, and each has a planned spike or mitigation.",
+]
+
+[[phase]]
+id = "P1"
+name = "Definition"
+gate = "SRR"
+gate_title = "System Requirements Review"
+question = "Are the requirements complete and verifiable, and can the riskiest parts work?"
+equivalent = "NASA Phase A (System Requirements Review); Stage-Gate gate 3"
+require = [
+  { kind = "srs", state = "released" },
+  { kind = "vvp", state = "exists" },
+  { kind = "rsk", state = "exists" },
+]
+checks = ["requirements-well-formed"]
+criteria = [
+  "Every stakeholder need traces to at least one requirement.",
+  "Every requirement is necessary, singular, unambiguous and has a verification method.",
+  "The top risks are retired by spikes or have credible mitigations.",
+  "Key technology choices are recorded as decision records.",
+]
+
+[[phase]]
+id = "P2"
+name = "Design"
+gate = "DR"
+gate_title = "Design Review"
+question = "Does the design meet every requirement, with the risky parts proven?"
+equivalent = "NASA software Preliminary and Critical Design Reviews, combined"
+require = [
+  { kind = "arc", state = "released" },
+  { kind = "vvp", state = "exists" },
+  { kind = "rsk", state = "exists" },
+]
+checks = ["requirements-well-formed"]
+criteria = [
+  "Every requirement is allocated to a building block.",
+  "Interfaces and data formats are specified.",
+  "Significant decisions are recorded as decision records.",
+  "Every requirement has a planned verification approach.",
+]
+
+[[phase]]
+id = "P3"
+name = "Build"
+gate = "TRR"
+gate_title = "Test Readiness Review"
+question = "Is the implementation complete and ready for formal verification?"
+equivalent = "NASA Test Readiness Review"
+require = [
+  { kind = "vvp", state = "released" },
+]
+checks = ["requirements-well-formed", "rtm-planned"]
+criteria = [
+  "Every requirement is implemented.",
+  "Automated tests run in continuous integration.",
+  "Every requirement has at least one planned test case.",
+]
+
+[[phase]]
+id = "P4"
+name = "Verify and release"
+gate = "RRR"
+gate_title = "Release Readiness Review"
+question = "Is every requirement verified, and is the release ready to ship?"
+equivalent = "NASA System Acceptance Review; Stage-Gate gate 5"
+require = [
+  { kind = "tr", state = "released" },
+  { kind = "rel", state = "released" },
+]
+checks = ["rtm-verified"]
+criteria = [
+  "Every requirement is verified by its stated method, with results recorded.",
+  "The software is validated by real use against the concept brief.",
+  "Release notes and user documentation are complete.",
+]
+
+[[phase]]
+id = "P5"
+name = "Sustain and close"
+gate = "CLOSE"
+gate_title = "Closeout Review"
+question = "Is the software working in use, and what did the project learn?"
+equivalent = "NASA Phases E-F"
+require = []
+criteria = [
+  "Open issues are resolved or dispositioned.",
+  "Lessons learned are recorded.",
+  "Releases and documents are tagged and archived.",
+]

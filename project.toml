@@ -1,0 +1,10 @@
+# Managed by jig. Change `phase` with `jig gate close`, not by hand.
+
+[project]
+name = "jig"
+code = "JIG"
+title = "Engineering process toolkit"
+kind = "software"
+visibility = "public"
+phase = "P3"
+status = "active"

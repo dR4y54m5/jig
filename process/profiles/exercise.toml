@@ -1,0 +1,22 @@
+kind = "exercise"
+title = "Learning exercise"
+description = "A kata, course or practice project. The repository holds code and a README; goals, notes and the retrospective live in the vault."
+tiers = []
+
+[[phase]]
+id = "P0"
+name = "Goal"
+require = []
+criteria = []
+
+[[phase]]
+id = "P1"
+name = "Work"
+require = []
+criteria = []
+
+[[phase]]
+id = "P2"
+name = "Retro"
+require = []
+criteria = []
