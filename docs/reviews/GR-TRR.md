@@ -3,8 +3,8 @@ id: JIG-GR-TRR
 title: Test Readiness Review (TRR)
 kind: gr
 revision: A
-status: draft
-date: 2026-09-30
+status: released
+date: 2026-10-05
 author: dR4y54m5
 gate: TRR
 ---
@@ -31,8 +31,8 @@ Decision requested: go to P4 Verify and release.
 
 ## 3. Entry criteria
 
-- [ ] Every requirement is implemented.
-- [ ] Automated tests run in continuous integration.
+- [x] Every requirement is implemented.
+- [x] Automated tests run in continuous integration.
 
 ## 4. Automated checks
 
@@ -92,9 +92,10 @@ Decision requested: go to P4 Verify and release.
 
 ## 7. Decision
 
-**Outcome:** Pending
+**Outcome:** Go (2026-10-05). Confirmed by the engineer: every requirement implemented and verified (JIG-TR-005); CI runs the tests and the check on every push to main
 
 ## 8. Revision history
 
 | Rev | Date | Description | Author |
 |---|---|---|---|
+| A | 2026-10-05 | Gate decision: Go | dR4y54m5 |
