@@ -3,7 +3,7 @@ id: JIG-ADR-010
 title: Make gates cumulative
 kind: adr
 revision: A
-status: draft
+status: released
 date: 2026-10-01
 author: dR4y54m5
 gate: TRR
@@ -63,3 +63,4 @@ Chosen option: 3. `process` merges the requirements of every phase up to the gat
 
 | Rev | Date | Description | Author |
 |---|---|---|---|
+| A | 2026-10-01 | Initial baseline | dR4y54m5 |

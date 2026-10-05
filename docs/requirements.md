@@ -3,7 +3,7 @@ id: JIG-SRS
 title: System requirements specification
 kind: srs
 revision: E
-status: draft
+status: released
 date: 2026-10-01
 author: dR4y54m5
 gate: SRR
@@ -524,3 +524,4 @@ None: jig is a command-line program.
 | B | 2026-09-30 | Add REQ-025 to REQ-028 for agent context | dR4y54m5 |
 | C | 2026-10-01 | Add REQ-029 to REQ-050; revise REQ-007, REQ-008, REQ-025 and REQ-027 | dR4y54m5 |
 | D | 2026-10-01 | Add REQ-051: continuous integration runs the tests and the check on every push to main | dR4y54m5 |
+| E | 2026-10-01 | Add REQ-052 and REQ-053: a gate requires the documents and checks of earlier phases | dR4y54m5 |
