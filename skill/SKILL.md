@@ -42,8 +42,14 @@ To bring an existing repository under the process, use `jig adopt <path>` with `
 2. Close the gaps the user wants closed: write documents, then release them.
 3. `jig gate open`, then write the record's summary and open actions. No decision can be recorded while the record still holds template guidance.
 4. Ask the user to confirm each entry criterion (multi-select question). Tick only what the user confirms.
-5. `jig doc pack` and give the user the PDF path. For a quick visual check, render pages with `-o '<dir>/page-{p}.png'`.
+5. `jig doc pack` and give the user the PDF path. The user reviews the PDF; you work from the Markdown it is rendered from.
 6. When the user decides, `jig gate close <GATE> --outcome go|go-with-actions|iterate|kill --note "<reason>"`. Then offer to commit and tag `gate/<gate>`.
+
+## Reading efficiently
+
+- Ask jig for summaries before reading files: `jig status`, `jig trace`, `jig gate check`, `jig explain`, each with `--json` when you need to parse it.
+- Read a document by the sections the task needs. Read it whole only when you write or review all of it.
+- Never read page images to learn what a document says: the Markdown in `docs/` is the same content. Render pages (`-o '<dir>/page-{p}.png'`) only to check layout after a change to jig's rendering, and look only at the pages that change touches.
 
 ## Learning material
 
