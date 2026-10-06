@@ -63,7 +63,7 @@ Record significant design choices as decision records (`jig doc new adr`).
 ### 4.1 A document kind
 
 1. Add an entry to `process/kinds.toml`: key, code, title, ISO/IEC/IEEE 15289 type, basis, purpose, naming, path, and `procedure` or `audience` where they apply.
-2. Add `templates/docs/<key>.md`. It starts with `# {{title}}`, opens with a Purpose and scope section, ends with the revision history table, numbers its sections, and puts authoring guidance in `<!-- guide: -->` comments.
+2. Add `templates/docs/<key>.md`; the concept brief's is `cnpt.md`, because `con` is a reserved file name on Windows, and the unit tests reject any file named like it. It starts with `# {{title}}`, opens with a Purpose and scope section, ends with the revision history table, numbers its sections, and puts authoring guidance in `<!-- guide: -->` comments.
 3. Require it in a profile if a gate needs it.
 4. Add it to `PACK_ORDER` in `src/render.rs`. If it is evidence at any gate once it exists, add it to the list in `pack_kinds` too.
 5. Add it to the kinds table in JIG-SPC-001 section 9.1.

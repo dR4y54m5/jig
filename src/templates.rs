@@ -10,7 +10,10 @@ pub fn template(path: &str) -> Option<&'static str> {
 }
 
 pub fn doc_template(kind: &str) -> Option<&'static str> {
-    template(&format!("docs/{kind}.md"))
+    // `con` is a reserved device name on Windows, where Git cannot check out
+    // `con.md`, so the concept brief's template has its own file name.
+    let name = if kind == "con" { "cnpt" } else { kind };
+    template(&format!("docs/{name}.md"))
 }
 
 pub fn asset(name: &str) -> &'static str {
@@ -87,6 +90,34 @@ mod tests {
             fill("{{a}} and {{a}}, {{b}}", &[("a", "x"), ("b", "y")]),
             "x and x, y"
         );
+    }
+
+    #[test]
+    fn no_file_uses_a_windows_reserved_name() {
+        // Windows reserves these names with any extension, and Git for
+        // Windows refuses to check out a repository that contains one.
+        let reserved = |stem: &str| {
+            let stem = stem.to_ascii_lowercase();
+            ["con", "prn", "aux", "nul"].contains(&stem.as_str())
+                || ((stem.starts_with("com") || stem.starts_with("lpt"))
+                    && stem.len() == 4
+                    && stem.as_bytes()[3].is_ascii_digit()
+                    && stem.as_bytes()[3] != b'0')
+        };
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+        let entries = walkdir::WalkDir::new(root)
+            .into_iter()
+            .filter_entry(|e| !matches!(e.file_name().to_str(), Some(".git" | "target")));
+        for entry in entries {
+            let entry = entry.unwrap();
+            let name = entry.file_name().to_string_lossy();
+            let stem = name.split('.').next().unwrap_or_default();
+            assert!(
+                !reserved(stem),
+                "{} uses a name reserved on Windows",
+                entry.path().strip_prefix(root).unwrap().display()
+            );
+        }
     }
 
     #[test]
