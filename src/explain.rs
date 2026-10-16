@@ -14,7 +14,7 @@ pub const TOPICS: &str = "Topics:
   profiles         the project kinds and their tiers
   phases           the lifecycle of a project kind (--kind, or the current project)
   <gate>           one gate review, e.g. `SRR` (--kind, or the current project)
-  separation       what belongs in a project repository and what belongs in the vault
+  separation       what belongs in a project repository, the vault and storage
   requirements     how requirements and test cases are written
   ids              document IDs, revisions and statuses";
 
@@ -234,6 +234,12 @@ belongs to the vault.
 
 References run one way: vault documents may cite project documents by ID;
 project documents never mention the vault, its paths or its contents.
+
+Recordings, captures, voice recordings, downloaded models and other data that
+is large, personal or obtained again rather than versioned go in neither: they
+go in the project's storage folder outside the bench (`jig storage path`;
+JIG_STORAGE, else jig-storage in the home directory). Code never names that
+folder; it reads the location from an environment variable or option.
 
 `jig check` enforces this on the files git tracks or would add, minus the
 paths under `[check] exclude` in project.toml:

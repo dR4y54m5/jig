@@ -116,6 +116,11 @@ enum Command {
         #[command(subcommand)]
         command: VaultCommand,
     },
+    /// Locate the folder for large or personal data kept outside the bench
+    Storage {
+        #[command(subcommand)]
+        command: StorageCommand,
+    },
     /// Clone registered projects that are missing from this machine
     Sync {
         #[arg(long)]
@@ -226,6 +231,12 @@ enum VaultCommand {
     /// Create a teaching document: primer, lab, walkthrough, retro or note
     New { kind: String, title: String },
     /// Print the current project's vault folder
+    Path,
+}
+
+#[derive(Subcommand)]
+enum StorageCommand {
+    /// Print the current project's storage folder, or the storage root outside a project
     Path,
 }
 
@@ -381,6 +392,7 @@ fn run(cli: Cli) -> Result<ExitCode> {
             Ok(ExitCode::SUCCESS)
         }
         Command::Vault { command } => vault_command(&bench, &cwd, command, json),
+        Command::Storage { command } => storage_command(&bench, &cwd, command, json),
         Command::Sync { dry_run } => sync(&bench, dry_run, json),
         Command::Setup => {
             let project = Project::discover(&cwd)?;
@@ -923,6 +935,28 @@ fn bench_status(bench: &Bench, json: bool) -> Result<ExitCode> {
             "{name:<14} {kind:<26} {phase:<34} {}/{} released, {} errors",
             row["released"], row["documents"], row["errors"]
         );
+    }
+    Ok(ExitCode::SUCCESS)
+}
+
+fn storage_command(
+    bench: &Bench,
+    cwd: &Path,
+    command: StorageCommand,
+    json: bool,
+) -> Result<ExitCode> {
+    match command {
+        StorageCommand::Path => {
+            let dir = match Project::find(cwd)? {
+                Some(project) => bench.storage_project_dir(&project.meta.name)?,
+                None => bench.storage_dir()?,
+            };
+            report(
+                json,
+                serde_json::json!({ "path": dir }),
+                &dir.display().to_string(),
+            )?;
+        }
     }
     Ok(ExitCode::SUCCESS)
 }

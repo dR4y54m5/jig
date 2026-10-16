@@ -2,9 +2,9 @@
 id: JIG-VVP
 title: Verification and validation plan
 kind: vvp
-revision: F
+revision: G
 status: released
-date: 2026-10-01
+date: 2026-10-16
 author: dR4y54m5
 gate: TRR
 ---
@@ -305,6 +305,14 @@ Continuous integration runs `cargo test` and `jig check` on every push to `main`
 - **Procedure:** `cargo test --bin jig process::` and `cargo test --test cli a_gate_requires_the_documents_and_checks_of_earlier_phases`
 - **Pass criteria:** The tests pass: a software project started at Build lists at its TRR the documents and checks of Concept, Definition and Design with those of Build, each document once and in the strongest state any of those phases requires; a go is refused while only the document of the gate's own phase is released, and is recorded once the earlier documents are released; in every profile no gate drops or weakens what the gate before it requires; a tier leaves out what applies only above it.
 
+### TC-034 Each project has a storage folder outside the bench
+
+- **Verifies:** REQ-054, REQ-055, REQ-056
+- **Method:** Test
+- **Level:** System
+- **Procedure:** `cargo test --test cli each_project_has_a_storage_folder_outside_the_bench`
+- **Pass criteria:** The test passes: with `JIG_STORAGE` set, `jig init` creates the storage root and `jig new` creates `<root>/<name>`; `jig storage path` prints that folder inside the project, also with `--json`, and the root at the bench root; a folder deleted on this machine comes back with `jig setup`; without `JIG_STORAGE`, the path is `jig-storage` in the home directory.
+
 ## 5. Validation
 
 | Need | Validation activity | Result |
@@ -328,3 +336,4 @@ Continuous integration runs `cargo test` and `jig check` on every push to `main`
 | D | 2026-10-01 | Add TC-020 to TC-031; TC-015 and TC-016 automated; TC-018 and the pass criteria of earlier cases revised; validation rows for N-04, N-07 and N-08 | dR4y54m5 |
 | E | 2026-10-01 | Add TC-032; continuous integration in the strategy and the environments | dR4y54m5 |
 | F | 2026-10-01 | Add TC-033; TC-030 covers the earlier phases a gate lists | dR4y54m5 |
+| G | 2026-10-16 | Add TC-034 for the storage folder; TC-012 covers jig storage path | dR4y54m5 |

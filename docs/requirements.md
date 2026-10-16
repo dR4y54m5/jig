@@ -2,9 +2,9 @@
 id: JIG-SRS
 title: System requirements specification
 kind: srs
-revision: E
+revision: F
 status: released
-date: 2026-10-01
+date: 2026-10-16
 author: dR4y54m5
 gate: SRR
 ---
@@ -481,6 +481,33 @@ jig shall run at a gate each automated check that the gate's phase or an earlier
 - **Rationale:** What an earlier gate checked, such as well-formed requirements, still has to hold at a later gate.
 - **Source:** N-02
 
+### REQ-054 Storage root
+
+jig shall take the storage root from `JIG_STORAGE` when it is set, and use `jig-storage` in the home directory otherwise.
+
+- **Verification:** Test
+- **Priority:** Should
+- **Rationale:** Recordings, captures and downloaded models belong in neither a repository nor the vault (JIG-ADR-011), and a machine may keep them on another drive.
+- **Source:** N-03
+
+### REQ-055 Storage path
+
+When `jig storage path` is run, jig shall print the storage folder of the project that contains the working directory, `<storage root>/<project name>`, or the storage root when no project contains it.
+
+- **Verification:** Test
+- **Priority:** Should
+- **Rationale:** An agent finds a project's data with one command, as it finds the vault folder.
+- **Source:** N-06
+
+### REQ-056 Storage folders
+
+When a project is created, adopted or set up, jig shall create the project's storage folder if it is missing.
+
+- **Verification:** Test
+- **Priority:** Should
+- **Rationale:** A project's data has a place from its first day, and a new machine gets the folders back from `jig sync`.
+- **Source:** N-07
+
 ## 4. Performance requirements
 
 ### REQ-022 Check time
@@ -525,3 +552,4 @@ None: jig is a command-line program.
 | C | 2026-10-01 | Add REQ-029 to REQ-050; revise REQ-007, REQ-008, REQ-025 and REQ-027 | dR4y54m5 |
 | D | 2026-10-01 | Add REQ-051: continuous integration runs the tests and the check on every push to main | dR4y54m5 |
 | E | 2026-10-01 | Add REQ-052 and REQ-053: a gate requires the documents and checks of earlier phases | dR4y54m5 |
+| F | 2026-10-16 | Add REQ-054 to REQ-056: a storage folder per project outside the bench | dR4y54m5 |

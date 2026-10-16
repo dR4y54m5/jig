@@ -8,20 +8,32 @@ use assert_cmd::Command;
 struct Bench {
     _dir: tempfile::TempDir,
     root: PathBuf,
+    _storage_dir: tempfile::TempDir,
+    storage: PathBuf,
 }
 
 impl Bench {
     fn new() -> Bench {
         let dir = tempfile::tempdir().unwrap();
         let root = dir.path().to_path_buf();
-        let bench = Bench { _dir: dir, root };
+        // The storage folder lives outside the bench, as on a real machine.
+        let storage_dir = tempfile::tempdir().unwrap();
+        let storage = storage_dir.path().join("jig-storage");
+        let bench = Bench {
+            _dir: dir,
+            root,
+            _storage_dir: storage_dir,
+            storage,
+        };
         bench.jig(&bench.root).arg("init").assert().success();
         bench
     }
 
     fn jig(&self, cwd: &Path) -> Command {
         let mut cmd = Command::cargo_bin("jig").unwrap();
-        cmd.env("JIG_BENCH", &self.root).current_dir(cwd);
+        cmd.env("JIG_BENCH", &self.root)
+            .env("JIG_STORAGE", &self.storage)
+            .current_dir(cwd);
         cmd
     }
 
@@ -1349,6 +1361,7 @@ fn every_command_prints_json() {
         &["gate", "open"],
         &["vault", "path"],
         &["vault", "new", "note", "Bench notes"],
+        &["storage", "path"],
         &["setup"],
     ] {
         run(&root, args);
@@ -1431,6 +1444,66 @@ fn agent_instructions_are_installed_from_the_vault() {
     fs::remove_file(&installed).unwrap();
     bench.jig(&root).arg("setup").assert().success();
     assert!(read(&installed).ends_with("# Demo rules\n"));
+}
+
+#[test]
+fn each_project_has_a_storage_folder_outside_the_bench() {
+    let bench = Bench::new();
+    let stdout = |cmd: &mut Command| -> String {
+        let output = cmd.output().unwrap();
+        assert!(output.status.success());
+        String::from_utf8_lossy(&output.stdout).trim().to_string()
+    };
+
+    // `jig init` creates the root and `jig new` the project's folder.
+    assert!(bench.storage.is_dir());
+    let root = bench.project("demo", &SOFTWARE);
+    let folder = bench.storage.join("demo");
+    assert!(folder.is_dir());
+
+    // `jig storage path` prints the project's folder inside it, the root elsewhere.
+    let printed = stdout(bench.jig(&root).args(["storage", "path"]));
+    assert_eq!(PathBuf::from(printed), folder);
+    let value = parse_json(
+        stdout(bench.jig(&root).args(["storage", "path", "--json"])).as_bytes(),
+        "storage path",
+    );
+    assert_eq!(PathBuf::from(value["path"].as_str().unwrap()), folder);
+    let printed = stdout(bench.jig(&bench.root).args(["storage", "path"]));
+    assert_eq!(PathBuf::from(printed), bench.storage);
+
+    // A folder missing on this machine comes back with `jig setup`.
+    fs::remove_dir(&folder).unwrap();
+    bench.jig(&root).arg("setup").assert().success();
+    assert!(folder.is_dir());
+
+    // Without `JIG_STORAGE`, storage is `jig-storage` in the home directory.
+    let home = bench.root.join("home");
+    let printed = stdout(
+        bench
+            .jig(&root)
+            .env_remove("JIG_STORAGE")
+            .env("HOME", &home)
+            .args(["storage", "path"]),
+    );
+    assert_eq!(
+        PathBuf::from(printed),
+        home.join("jig-storage").join("demo")
+    );
+
+    // Windows sets only USERPROFILE outside a Unix-like shell.
+    let printed = stdout(
+        bench
+            .jig(&root)
+            .env_remove("JIG_STORAGE")
+            .env_remove("HOME")
+            .env("USERPROFILE", &home)
+            .args(["storage", "path"]),
+    );
+    assert_eq!(
+        PathBuf::from(printed),
+        home.join("jig-storage").join("demo")
+    );
 }
 
 #[test]
@@ -1529,6 +1602,7 @@ fn new_repositories_start_on_main() {
         Command::cargo_bin("jig")
             .unwrap()
             .env("JIG_BENCH", dir.path())
+            .env("JIG_STORAGE", dir.path().join("storage"))
             .env("GIT_CONFIG_COUNT", "1")
             .env("GIT_CONFIG_KEY_0", "init.defaultBranch")
             .env("GIT_CONFIG_VALUE_0", "trunk")

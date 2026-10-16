@@ -508,10 +508,15 @@ fn agent_actions(plan: &mut Plan, bench: &Bench, root: &Path, meta: &ProjectMeta
     plan.actions.push(Action::InstallHook {
         repo: root.to_path_buf(),
     });
+    // The project's data folder lives outside the bench (JIG-ADR-011).
+    if let Ok(dir) = bench.storage_project_dir(&meta.name) {
+        plan.dir(dir);
+    }
 }
 
 /// Installs what an existing project needs on this machine: the hook, the
-/// local agent settings, and the agent instructions if they are missing.
+/// local agent settings, the agent instructions if they are missing, and the
+/// storage folder.
 pub fn setup_plan(bench: &Bench, project: &Project) -> Plan {
     let mut plan = Plan::default();
     agent_actions(&mut plan, bench, &project.root, &project.meta, true);
@@ -528,11 +533,14 @@ pub fn hook_plan(repo: &Path) -> Plan {
     }
 }
 
-/// Creates the bench directories and an empty vault.
+/// Creates the bench directories, the storage root and an empty vault.
 pub fn init_plan(bench: &Bench) -> Plan {
     let mut plan = Plan::default();
     plan.dir(bench.projects_dir());
     plan.dir(bench.refs_dir());
+    if let Ok(dir) = bench.storage_dir() {
+        plan.dir(dir);
+    }
     for dir in VAULT_DIRS {
         plan.dir(bench.vault_dir().join(dir));
     }

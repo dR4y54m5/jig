@@ -74,16 +74,24 @@ pub struct Project {
 impl Project {
     /// The project containing `start`: the nearest ancestor with a `project.toml`.
     pub fn discover(start: &Path) -> Result<Project> {
+        match Project::find(start)? {
+            Some(project) => Ok(project),
+            None => bail!(
+                "not inside a jig project (no {PROJECT_FILE} in {} or its parents)",
+                start.display()
+            ),
+        }
+    }
+
+    /// Like `discover`, but `None` outside every project.
+    pub fn find(start: &Path) -> Result<Option<Project>> {
         let start = start.canonicalize().unwrap_or_else(|_| start.to_path_buf());
         for dir in start.ancestors() {
             if dir.join(PROJECT_FILE).is_file() {
-                return Project::load(dir);
+                return Project::load(dir).map(Some);
             }
         }
-        bail!(
-            "not inside a jig project (no {PROJECT_FILE} in {} or its parents)",
-            start.display()
-        )
+        Ok(None)
     }
 
     pub fn load(root: &Path) -> Result<Project> {

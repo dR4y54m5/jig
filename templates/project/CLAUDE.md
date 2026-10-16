@@ -12,6 +12,7 @@
 - `docs/` holds controlled engineering documents only. Create them with `jig doc new`, release them with `jig doc release`, and change a released document only after `jig doc revise`. Never edit `id`, `kind`, `revision`, `status` or `date` by hand.
 - Run `jig check` before finishing a change. The pre-commit hook runs it too; never bypass it with `--no-verify`.
 - This repository holds only what is needed to build, verify, operate or change the product. Learning material never goes here, and nothing here refers to where it is kept; `jig vault path` shows its location.
+- Recordings, captures, downloaded models and other large or personal data go in the project's storage folder outside the bench (`jig storage path`), never in this repository or the vault. Code never names that folder; it reads the location from an environment variable or an option.
 - IDs are permanent: never renumber or reuse a requirement, test case, risk, need or document ID.
 - When a V&V test case names an automated test, renaming, moving or deleting that test means updating the plan in the same change.
 - A change to behaviour that a requirement covers updates the requirement (after `jig doc revise`) and its test case in the same change.

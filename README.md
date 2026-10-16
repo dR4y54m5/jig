@@ -60,8 +60,9 @@ jig doc pack                               # the gate review package as one PDF
 | `jig trace` | The requirements traceability matrix |
 | `jig explain` | The process rules: kinds, phases, gates, separation, requirements, IDs |
 | `jig vault new` | Learning documents in the private vault for the current project |
+| `jig storage path` | The project's folder for recordings, models and other large or personal data, outside the bench (`JIG_STORAGE`, else `~/jig-storage`) |
 | `jig sync` | Clone registered projects missing from this machine |
-| `jig setup` | Install a project's pre-commit hook, agent instructions and local agent settings |
+| `jig setup` | Install a project's pre-commit hook, agent instructions, local agent settings and storage folder |
 
 Every command accepts `--json` and then prints one JSON document. `jig new`, `jig adopt`, `jig init` and `jig sync` accept `--dry-run`, which lists every planned change without making it.
 

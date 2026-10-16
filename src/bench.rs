@@ -25,6 +25,15 @@ pub struct RegistryEntry {
     pub remote: String,
 }
 
+/// The home directory: `HOME`, else `USERPROFILE`, which is all that Windows
+/// sets outside a Unix-like shell.
+fn home() -> Result<PathBuf> {
+    std::env::var_os("HOME")
+        .or_else(|| std::env::var_os("USERPROFILE"))
+        .map(PathBuf::from)
+        .context("neither HOME nor USERPROFILE is set")
+}
+
 const REGISTRY_HEADER: &str =
     "# Projects on this bench. `jig sync` clones any that are missing locally.\n\n";
 
@@ -35,13 +44,24 @@ impl Bench {
             Some(path) => path.to_path_buf(),
             None => match std::env::var_os("JIG_BENCH") {
                 Some(path) => PathBuf::from(path),
-                None => {
-                    let home = std::env::var_os("HOME").context("HOME is not set")?;
-                    PathBuf::from(home).join("bench")
-                }
+                None => home()?.join("bench"),
             },
         };
         Ok(Bench { root })
+    }
+
+    /// The folder for large or personal data that belongs in neither a
+    /// repository nor the vault: `JIG_STORAGE`, else `~/jig-storage`. It sits
+    /// outside the bench (JIG-ADR-011).
+    pub fn storage_dir(&self) -> Result<PathBuf> {
+        match std::env::var_os("JIG_STORAGE") {
+            Some(path) => Ok(PathBuf::from(path)),
+            None => Ok(home()?.join("jig-storage")),
+        }
+    }
+
+    pub fn storage_project_dir(&self, name: &str) -> Result<PathBuf> {
+        Ok(self.storage_dir()?.join(name))
     }
 
     pub fn projects_dir(&self) -> PathBuf {

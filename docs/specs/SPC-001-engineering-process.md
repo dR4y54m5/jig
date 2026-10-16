@@ -2,9 +2,9 @@
 id: JIG-SPC-001
 title: Engineering process
 kind: spc
-revision: F
+revision: G
 status: released
-date: 2026-10-01
+date: 2026-10-16
 author: dR4y54m5
 gate: TRR
 ---
@@ -47,6 +47,7 @@ The process draws on the documents below and claims conformance to none of them.
 | Bench | The directory holding every project repository, the vault and reference repositories |
 | Project repository | One git repository per project, public or private |
 | Vault | One private repository holding learning material, notes, ideas, inventory and the project registry |
+| Storage | A folder outside the bench, not under version control, holding each project's large or personal data |
 | Profile | The lifecycle of a project kind: phases, gates, required documents, checks and entry criteria |
 | Tier | How far a hardware product goes: desk, batch or retail |
 | Gate | The review that closes a phase and decides whether the project continues |
@@ -67,6 +68,8 @@ The process draws on the documents below and claims conformance to none of them.
 ```
 
 Paths never encode a project's kind, language or year; those live in each project's `project.toml`, because projects change kind (a software prototype becomes a product).
+
+Large or personal data lives outside the bench, in the storage folder (section 4.4).
 
 ### 4.2 The vault
 
@@ -99,11 +102,22 @@ A new machine gets every layer back from `jig init` and `jig sync`, which run `j
 
 The project instructions and the local settings are never committed, whatever the project's visibility. `jig setup` lists both in the repository's local exclude file, which git reads and never commits, so that no tracked file names them; `jig check` reports an error if git tracks either. `jig new` and `jig adopt` seed the instructions in the vault from a template, or from a `CLAUDE.md` the adopted repository already has, which adoption leaves untouched. The installed copies of the bench guide and the project instructions are read-only: an edit is made to the vault copy and installed again.
 
+### 4.4 Storage
+
+Recordings, captures, recordings of a person's voice, downloaded models, datasets and other data that is large, personal or obtained again rather than versioned belong in neither a project repository nor the vault. They live in the storage folder ([JIG-ADR-011](../decisions/ADR-011-keep-large-and-personal-data-in-a-storage-folder.md)):
+
+```text
+<storage>/           JIG_STORAGE, else jig-storage in the home directory
+  <name>/            one folder per project, named like its repository
+```
+
+`jig storage path` prints the current project's folder, or the root outside a project. `jig init` creates the root; `jig new`, `jig adopt` and `jig setup` create the project's folder, so `jig sync` restores the folders, empty, on a new machine. The storage folder is under no version control and is not synchronised between machines. A project's code never names the folder, because a home path in a repository is a private reference (section 5.4); it takes the location from an environment variable or an option of its own.
+
 ## 5. Separation of engineering and learning material
 
 ### 5.1 Rule
 
-A project repository contains only information needed to build, verify, operate or change that project's product. Material written to build the reader's own skills belongs in the vault. The rule applies to private project repositories too, because a private project may be published later.
+A project repository contains only information needed to build, verify, operate or change that project's product. Material written to build the reader's own skills belongs in the vault. Large or personal data belongs in the storage folder (section 4.4). The rule applies to private project repositories too, because a private project may be published later.
 
 ### 5.2 Classification
 
@@ -388,3 +402,4 @@ The references in section 2 describe more than one engineer needs. The process l
 | D | 2026-09-30 | Section 4.3 agent context; bench and archive in the vault layout | dR4y54m5 |
 | E | 2026-10-01 | References claim no conformance; agent files stay untracked; criteria come from the profile; basis stamps; phases without gates; private references checked in every text file | dR4y54m5 |
 | F | 2026-10-01 | Gates are cumulative: section 8.1, the table of section 8.3 and tailoring in section 15.1 | dR4y54m5 |
+| G | 2026-10-16 | Section 4.4 storage: a folder per project outside the bench for large or personal data | dR4y54m5 |

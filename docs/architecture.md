@@ -2,9 +2,9 @@
 id: JIG-ARC
 title: Architecture description
 kind: arc
-revision: E
+revision: F
 status: released
-date: 2026-10-01
+date: 2026-10-16
 author: dR4y54m5
 gate: DR
 ---
@@ -148,6 +148,9 @@ Measured with the release build on an Apple M4 on 2026-10-01. The check runs git
 | REQ-050 | `templates` |
 | REQ-051 | The continuous integration workflow, `.github/workflows/ci.yml` |
 | REQ-052, REQ-053 | `process`, `gate` |
+| REQ-054 | `bench` |
+| REQ-055 | `main`, `project`, `bench` |
+| REQ-056 | `scaffold`, `bench` |
 
 ## 9. Risks and technical debt
 
@@ -163,6 +166,7 @@ Measured with the release build on an Apple M4 on 2026-10-01. The check runs git
 |---|---|
 | Bench | The directory holding every project repository, the vault and reference repositories |
 | Vault | The private companion repository for learning material, notes, ideas and inventory |
+| Storage | A folder outside the bench, not under version control, for each project's large or personal data ([JIG-ADR-011](decisions/ADR-011-keep-large-and-personal-data-in-a-storage-folder.md)) |
 | Kind | A document kind (SRS, ADR) or a project kind (product, software) |
 | Profile | The lifecycle of a project kind: phases, gates, required documents and criteria |
 | Tier | How far a product goes: desk, batch or retail |
@@ -178,3 +182,4 @@ Measured with the release build on an Apple M4 on 2026-10-01. The check runs git
 | C | 2026-10-01 | Allocate REQ-029 to REQ-050; add the main and templates modules; agent files, checked files and refusals in the design principles; measured times updated | dR4y54m5 |
 | D | 2026-10-01 | Allocate REQ-051 to the continuous integration workflow | dR4y54m5 |
 | E | 2026-10-01 | Cumulative gates in the solution strategy; REQ-052 and REQ-053 allocated to process and gate | dR4y54m5 |
+| F | 2026-10-16 | Storage in the glossary; REQ-054 to REQ-056 allocated | dR4y54m5 |
